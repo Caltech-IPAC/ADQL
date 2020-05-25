@@ -1,1 +1,7 @@
+numpy
+logging
+sqlparse
+re
+astropy
+spatial_index
 pytest
