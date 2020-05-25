@@ -1,0 +1,15 @@
+select ra, dec from iraspsc where contains(point('galactic', ra, dec), box('ECLIPTIC', 233.56, 34.567, 1., 2.)) = 1 order by dec desc
+select ave(ra) as ra, ave(declination) as dec from iraspsc where (contains(point('icrs', ra, dec), circle('icrs', 234.56, 34.567, 0.57)) = 1 and dec > 0.) or (0=contains(point('icrs', ra, dec), circle('icrs', 234.56, -34.567, 0.46))  and dec > 0.) group by ra, dec order by dec desc
+select ra, dec from iraspsc where (contains(point('galactic', ra, dec), polygon('ECLIPTIC', 233.56, 34.567, 233.56, 33.567, 234.56, 33.567, 234.56, 34.567)) = 1 order by dec desc
+select TOP 100 ave(ra) as ra, ave(declination) as dec from iraspsc where (contains(point('icrs', ra, dec), circle('GALACTIC', 234.56, 34.567, 0.57)) = 1 and dec > 0.) or (0=contains(point('icrs', ra, dec), circle('GALACTIC', 234.56, -34.567, 0.46))  and dec > 0.) group by ra, dec order by dec desc
+select TOP 100 ra, dec from iraspsc
+select TOP 100 ave(ra) as ra, ave(declination) as dec from iraspsc where dec > 0. group by ra, dec order by dec desc
+select TOP 100 ra, dec from iraspsc where dec > 0.
+select ra, dec from iraspsc where dec > 0.
+select ra, dec from iraspsc where contains(point('galactic', dec), box('ECLIPTIC', 233.56, 34.567, 1., 2.)) = 1 order by dec desc
+select ra, dec from iraspsc where contains(point('icrs', ra, dec), circle('icrs' 218.799561, -29.962872, 0.001)) = 1
+select ra, dec from iraspsc where contains(point('icrs', ra, dec), circle('icrs' 218.799561, 10.0, 0.001)) = 1
+select ra, dec from iraspsc where (contains(point('galactic', ra, dec), polygon('ECLIPTIC', 233.56, 34.567, 233.56, 33.567, 234.56, 33.567, 234.56, 34.567)) = 1 order by dec desc
+select ra, dec from iraspsc where (contains (point    ('galactic', ra, dec), polygoN  ('ECLIPTIC', 233.56, 34.567, 233.56, 33.567, 234.56, 33.567, 234.56, 34.567)) = 1 order by dec desc
+select ra,dec,htm20 from exo_tap.ps where contains(point('icrs',ra,dec),circle('icrs',262.0,17.0,1.0))=1
+select ra,dec,htm20 from exo_tap.ps where contains(point('icrs',ra,dec),circle('icrs',293.5607117,-23.1312775,1.0))=1
