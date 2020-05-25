@@ -255,7 +255,7 @@ uritemplate==3.0.0
 urllib3==1.22
 wcwidth==0.1.7
 webencodings==0.5.1
-Werkzeug==0.14.1
+Werkzeug==0.15.3
 widgetsnbextension==3.5.1
 wrapt==1.10.11
 wurlitzer==1.0.3
