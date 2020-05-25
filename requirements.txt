@@ -76,7 +76,7 @@ h5py==2.7.1
 heapdict==1.0.0
 hiresprv==2.0.1
 html5lib==1.0.1
-httplib2==0.13.1
+httplib2==0.18.0
 idna==2.6
 ijson==2.3
 imageio==2.3.0
