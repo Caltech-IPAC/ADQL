@@ -1,7 +1,6 @@
 import sys
 import math
 import numpy as np
-import logging
 import sqlparse
 import re
 
@@ -126,8 +125,7 @@ class ADQL:
 
         if (debugfile != None and debugfile != ''):
             self.debug = True
-            self.debugfile = debugfile
-            logging.basicConfig(filename=self.debugfile, filemode='w', level=logging.DEBUG)
+            self.debugfile = open(debugfile, 'w+')
 
         self.fconvert = {'icrs'          : 'icrs',
                          'fk5'           : 'fk5',
@@ -184,16 +182,16 @@ class ADQL:
 
 
         if self.debug:
-            logging.debug('Enter __parseADQL')
-            logging.debug('stmt:')
-            logging.debug(stmt)
+            self.debugfile.write('Enter __parseADQL')
+            self.debugfile.write('stmt:')
+            self.debugfile.write(stmt)
     
         for i in range(len(stmt.tokens)):
     
             token = stmt.tokens[i]
     
             if(self.debug):
-                logging.debug('Token: [' + str(token) + ']')
+                self.debugfile.write('Token: [' + str(token) + ']')
         
     
             # STATEMENT
@@ -203,7 +201,7 @@ class ADQL:
     
             if(isinstance(token, sqlparse.sql.Statement)):
                 if(self.debug):
-                    logging.debug('       TYPE: Statement')
+                    self.debugfile.write('       TYPE: Statement')
                 self._parseADQL(token)
         
     
@@ -215,8 +213,8 @@ class ADQL:
     
             elif(isinstance(token, sqlparse.sql.Comment)):
                 if(self.debug):
-                    logging.debug('       TYPE: Comment')
-                    logging.debug("       VALUE: '" + token.value + "'")
+                    self.debugfile.write('       TYPE: Comment')
+                    self.debugfile.write("       VALUE: '" + token.value + "'")
         
     
     
@@ -227,8 +225,8 @@ class ADQL:
     
             elif(isinstance(token, sqlparse.sql.Identifier)):
                 if(self.debug):
-                    logging.debug('       TYPE: Identifier')
-                    logging.debug("       VALUE: '" + token.value + "'")
+                    self.debugfile.write('       TYPE: Identifier')
+                    self.debugfile.write("       VALUE: '" + token.value + "'")
     
                 if(token.value == 'contains'):
                     self.inContains = 1
@@ -238,21 +236,21 @@ class ADQL:
                     self.inBox      = 0
     
                     if(self.debug):
-                        logging.debug('       inContains -> 1')
+                        self.debugfile.write('       inContains -> 1')
     
                     self.adql_tokens.append('GEOM')
     
                     if(self.debug):
-                        logging.debug('       [GEOM] added to adql_tokens[](1)')
+                        self.debugfile.write('       [GEOM] added to adql_tokens[](1)')
     
                 elif(self.inContains and token.value == 'point'):
                     self.geomFuncs.append(token.value)
                     self.funcArgs = []
     
                     if(self.debug):
-                        logging.debug(\
+                        self.debugfile.write(\
 			    '[' + token.value + '] added to geomFuncs[](1)')
-                        logging.debug('funcArgs[] initialized (point)')
+                        self.debugfile.write('funcArgs[] initialized (point)')
     
                     self.inPoint   = 1
                     self.inCircle  = 0
@@ -260,16 +258,16 @@ class ADQL:
                     self.inBox     = 0
     
                     if(self.debug):
-                        logging.debug('       inPoint -> 1')
+                        self.debugfile.write('       inPoint -> 1')
     
                 elif(self.inContains and token.value == 'circle'):
                     self.geomFuncs.append(token.value)
                     self.funcArgs = []
     
                     if(self.debug):
-                        logging.debug(\
+                        self.debugfile.write(\
 			    '[' + token.value + '] added to geomFuncs[](2)')
-                        logging.debug('       funcArgs[] initialized (circle)')
+                        self.debugfile.write('       funcArgs[] initialized (circle)')
     
                     self.inPoint   = 0
                     self.inCircle  = 1
@@ -277,16 +275,16 @@ class ADQL:
                     self.inBox     = 0
     
                     if(self.debug):
-                        logging.debug('       inCircle -> 1')
+                        self.debugfile.write('       inCircle -> 1')
     
                 elif(self.inContains and token.value == 'polygon'):
                     self.geomFuncs.append(token.value)
                     self.funcArgs = []
     
                     if(self.debug):
-                        logging.debug(\
+                        self.debugfile.write(\
 			    '[' + token.value + '] added to geomFuncs[](3)')
-                        logging.debug('       funcArgs[] initialized (polygon)')
+                        self.debugfile.write('       funcArgs[] initialized (polygon)')
     
                     self.inPoint   = 0
                     self.inCircle  = 0
@@ -294,16 +292,16 @@ class ADQL:
                     self.inBox     = 0
     
                     if(self.debug):
-                        logging.debug('       inPolygon -> 1')
+                        self.debugfile.write('       inPolygon -> 1')
     
                 elif(self.inContains and token.value == 'box'):
                     self.geomFuncs.append(token.value)
                     self.funcArgs = []
     
                     if(self.debug):
-                        logging.debug(\
+                        self.debugfile.write(\
 			    '[' + token.value + '] added to geomFuncs[](4)')
-                        logging.debug('       funcArgs[] initialized (box)')
+                        self.debugfile.write('       funcArgs[] initialized (box)')
     
                     self.inPoint   = 0
                     self.inCircle  = 0
@@ -311,7 +309,7 @@ class ADQL:
                     self.inBox     = 1
     
                     if(self.debug):
-                        logging.debug('       inBox -> 1')
+                        self.debugfile.write('       inBox -> 1')
     
     
                 elif(self.inPoint or self.inCircle or self.inPolygon or self.inBox):
@@ -319,13 +317,13 @@ class ADQL:
                        self.funcArgs.append(token.value)
     
                        if(self.debug):
-                           logging.debug('       [' + token.value + '] added to funcArgs[](1)')
+                           self.debugfile.write('       [' + token.value + '] added to funcArgs[](1)')
     
                 else:
                     self.adql_tokens.append(token.value)
     
                     if(self.debug):
-                        logging.debug(\
+                        self.debugfile.write(\
 			    '[' + token.value + '] added to adql_tokens[](1)')
         
     
@@ -337,22 +335,22 @@ class ADQL:
     
             elif(isinstance(token, sqlparse.sql.IdentifierList)):
                 if(self.debug):
-                    logging.debug('       TYPE: IdentifierList')
+                    self.debugfile.write('       TYPE: IdentifierList')
         
                 list = token.tokens
         
                 count = len(list)
         
                 if(self.debug):
-                    logging.debug('list:')
-                    logging.debug(list)
-                    logging.debug(f'count= {count:d}')
+                    self.debugfile.write('list:')
+                    self.debugfile.write(list)
+                    self.debugfile.write(f'count= {count:d}')
         
                 for j in range(count):
                 
                     if(self.debug):
-                        logging.debug('list[j]:')
-                        logging.debug(list[j])
+                        self.debugfile.write('list[j]:')
+                        self.debugfile.write(list[j])
         
                     if(isinstance(list[j], sqlparse.sql.TokenList)):
                         self._parseADQL(list[j])
@@ -362,34 +360,34 @@ class ADQL:
                            self.funcArgs.append(list[j].value)
     
                            if(self.debug):
-                               logging.debug('       [' + list[j].value + '] added to funcArgs[](2)')
+                               self.debugfile.write('       [' + list[j].value + '] added to funcArgs[](2)')
     
                     elif(self.inCircle):
                         if(list[j].value != ' ' and list[j].value != ','):
                            self.funcArgs.append(list[j].value)
     
                            if(self.debug):
-                               logging.debug('       [' + list[j].value + '] added to funcArgs[](3)')
+                               self.debugfile.write('       [' + list[j].value + '] added to funcArgs[](3)')
     
                     elif(self.inPolygon):
                         if(list[j].value != ' ' and list[j].value != ','):
                            self.funcArgs.append(list[j].value)
     
                            if(self.debug):
-                               logging.debug('       [' + list[j].value + '] added to funcArgs[](4)')
+                               self.debugfile.write('       [' + list[j].value + '] added to funcArgs[](4)')
     
                     elif(self.inBox):
                         if(list[j].value != ' ' and list[j].value != ','):
                            self.funcArgs.append(list[j].value)
     
                            if(self.debug):
-                               logging.debug('       [' + list[j].value + '] added to funcArgs[](5)')
+                               self.debugfile.write('       [' + list[j].value + '] added to funcArgs[](5)')
     
                     elif (self.inContains == 0):
                         self.adql_tokens.append(list[j].value)
     
                         if(self.debug):
-                            logging.debug('       [' + list[j].value + '] added to adql_tokens[](2)')
+                            self.debugfile.write('       [' + list[j].value + '] added to adql_tokens[](2)')
     
         
     
@@ -401,8 +399,8 @@ class ADQL:
     
             elif(isinstance(token, sqlparse.sql.Where)):
                 if(self.debug):
-                    logging.debug('       TYPE: Where')
-                    logging.debug(token)
+                    self.debugfile.write('       TYPE: Where')
+                    self.debugfile.write(token)
                 self._parseADQL(token)
         
     
@@ -418,7 +416,7 @@ class ADQL:
     
             elif(isinstance(token, sqlparse.sql.Parenthesis)):
                 if(self.debug):
-                    logging.debug('       TYPE: Parenthesis')
+                    self.debugfile.write('       TYPE: Parenthesis')
                 self._parseADQL(token)
         
     
@@ -431,7 +429,7 @@ class ADQL:
     
             elif(isinstance(token, sqlparse.sql.Comparison)):
                 if(self.debug):
-                    logging.debug('       TYPE: Comparison')
+                    self.debugfile.write('       TYPE: Comparison')
                 self._parseADQL(token)
         
     
@@ -443,7 +441,7 @@ class ADQL:
     
             elif(isinstance(token, sqlparse.sql.TokenList)):
                 if(self.debug):
-                    logging.debug('       TYPE: TokenList (generic)')
+                    self.debugfile.write('       TYPE: TokenList (generic)')
                 self._parseADQL(token)
         
     
@@ -457,7 +455,7 @@ class ADQL:
     
             elif(isinstance(token, sqlparse.sql.Token)):
                 if(self.debug):
-                    logging.debug('       TYPE: Token (generic)')
+                    self.debugfile.write('       TYPE: Token (generic)')
         
                 try:
                     if(token.value == ')'):
@@ -468,28 +466,28 @@ class ADQL:
                                 self.geomArgs.append(self.funcArgs)
     
                                 if(self.debug):
-                                    logging.debug('       [' + self.funcArgs + '] added to geomArgs[](1)')
+                                    self.debugfile.write('       [' + self.funcArgs + '] added to geomArgs[](1)')
     
                             elif(self.inCircle):
                                 self.inCircle = 0
                                 self.geomArgs.append(self.funcArgs)
     
                                 if(self.debug):
-                                    logging.debug('       [' + self.funcArgs + '] added to geomArgs[](2)')
+                                    self.debugfile.write('       [' + self.funcArgs + '] added to geomArgs[](2)')
     
                             elif(self.inPolygon):
                                 self.inPolygon = 0
                                 self.geomArgs.append(self.funcArgs)
     
                                 if(self.debug):
-                                    logging.debug('       [' + self.funcArgs + '] added to geomArgs[](3)')
+                                    self.debugfile.write('       [' + self.funcArgs + '] added to geomArgs[](3)')
     
                             elif(self.inBox):
                                 self.inBox = 0
                                 self.geomArgs.append(self.funcArgs)
     
                                 if(self.debug):
-                                    logging.debug('       [' + self.funcArgs + '] added to geomArgs[](4)')
+                                    self.debugfile.write('       [' + self.funcArgs + '] added to geomArgs[](4)')
     
                             else:
                                 self.inContains = 0
@@ -497,20 +495,20 @@ class ADQL:
                             self.adql_tokens.append(token.value)
     
                             if(self.debug):
-                                logging.debug('       [' + token.value + '] added to adql_tokens[](3)')
+                                self.debugfile.write('       [' + token.value + '] added to adql_tokens[](3)')
     
                     elif(self.inPoint or self.inCircle or self.inPolygon or self.inBox):
                         if(token.value != '(' and token.value != ' ' and token.value != ','):
                            self.funcArgs.append(token.value)
     
                            if(self.debug):
-                               logging.debug('       [' + token.value + '] added to funcArgs[](5)')
+                               self.debugfile.write('       [' + token.value + '] added to funcArgs[](5)')
     
                     elif (self.inContains == 0):
                         self.adql_tokens.append(token.value)
     
                         if(self.debug):
-                            logging.debug('       [' + token.value + '] added to adql_tokens[](4)')
+                            self.debugfile.write('       [' + token.value + '] added to adql_tokens[](4)')
     
     
                 except:
@@ -580,7 +578,7 @@ class ADQL:
     #    of this package.
     
         if self.debug:
-            logging.debug(f'Enter __geomConstraint: i= {i:d}')
+            self.debugfile.write(f'Enter __geomConstraint: i= {i:d}')
     
         func1 = self.geomFuncs[2*i]
         func2 = self.geomFuncs[2*i+1]
@@ -599,11 +597,11 @@ class ADQL:
         nargs2 = len(args2)
 
         if self.debug:
-            logging.debug('')
-            logging.debug(f'func1= {func1:s}')
-            logging.debug(f'func2= {func2:s}')
-            logging.debug(f'nargs1= {nargs1:d}')
-            logging.debug(f'nargs2= {nargs2:d}')
+            self.debugfile.write('')
+            self.debugfile.write(f'func1= {func1:s}')
+            self.debugfile.write(f'func2= {func2:s}')
+            self.debugfile.write(f'nargs1= {nargs1:d}')
+            self.debugfile.write(f'nargs2= {nargs2:d}')
    
         geomstr = ''
 
@@ -625,8 +623,8 @@ class ADQL:
                raise Exception (str(e) + ' in point() function.')
     
             if self.debug:
-                logging.debug('')
-                logging.debug(f'point:coordsys= : {coordsys:s}')
+                self.debugfile.write('')
+                self.debugfile.write(f'point:coordsys= : {coordsys:s}')
             
 
             racol  = args1[1]
@@ -645,8 +643,8 @@ class ADQL:
                 raise Exception (str(e) + ' in circle function.')
     
             if self.debug:
-                logging.debug('')
-                logging.debug(f'circle:coordsys= : {coordsys:s}')
+                self.debugfile.write('')
+                self.debugfile.write(f'circle:coordsys= : {coordsys:s}')
      
 
             lon = float(args2[1])
@@ -671,8 +669,8 @@ class ADQL:
             except Exception as e:
             
                 if self.debug:
-                    logging.debug('')
-                    logging.debug(f'SkyCoord exception: e= {str(e):s}')
+                    self.debugfile.write('')
+                    self.debugfile.write(f'SkyCoord exception: e= {str(e):s}')
      
                 raise Exception (str(e))
     
@@ -687,8 +685,8 @@ class ADQL:
             except Exception as e:
             
                 if self.debug:
-                    logging.debug('')
-                    logging.debug(f'spt.cone_search exception: e= {str(e):s}')
+                    self.debugfile.write('')
+                    self.debugfile.write(f'spt.cone_search exception: e= {str(e):s}')
      
                 raise Exception (str(e))
     
@@ -718,8 +716,8 @@ class ADQL:
                raise Exception (str(e) + ' in point() function.')
 
             if self.debug:
-                logging.debug('')
-                logging.debug(f'point:coordsys= : {coordsys:s}')
+                self.debugfile.write('')
+                self.debugfile.write(f'point:coordsys= : {coordsys:s}')
      
             try:           
                 coordsys = self._frame_lookup(args2[0])
@@ -727,8 +725,8 @@ class ADQL:
                raise Exception (str(e) + ' in polygon() function.')
     
             if self.debug:
-                logging.debug('')
-                logging.debug(f'polygon: coordsys= : {coordsys:s}')
+                self.debugfile.write('')
+                self.debugfile.write(f'polygon: coordsys= : {coordsys:s}')
      
 
             if(nargs2%2 == 0):
@@ -784,8 +782,8 @@ class ADQL:
                raise Exception (str(e) + ' in point() function.')
 
             if self.debug:
-                logging.debug('')
-                logging.debug(f'point: coordsys= : {coordsys:s}')
+                self.debugfile.write('')
+                self.debugfile.write(f'point: coordsys= : {coordsys:s}')
      
 
             if(nargs2 != 5):
@@ -797,8 +795,8 @@ class ADQL:
                raise Exception (str(e) + ' in box() function.')
     
             if self.debug:
-                logging.debug('')
-                logging.debug(f'box: coordsys= : {coordsys:s}')
+                self.debugfile.write('')
+                self.debugfile.write(f'box: coordsys= : {coordsys:s}')
      
 
             for j in range(1,nargs2):
@@ -826,7 +824,7 @@ class ADQL:
                 decj = coord.icrs.dec.deg
    
                 if self.debug:
-                    logging.debug(f'j= {j:d} raj= {raj:f} decj= {decj:f}')
+                    self.debugfile.write(f'j= {j:d} raj= {raj:f} decj= {decj:f}')
 
 
                 ra.append (raj)
@@ -878,45 +876,45 @@ class ADQL:
         '''
 
         if self.debug:
-            logging.debug ('')
-            logging.debug (f'Enter __frame_lookup: str_in= {str_in:s}')
+            self.debugfile.write ('')
+            self.debugfile.write (f'Enter __frame_lookup: str_in= {str_in:s}')
 
         coordstr = str_in.strip("'")
         if self.debug:
-            logging.debug ('')
-            logging.debug (f'coordstrstr= {coordstr:s}')
+            self.debugfile.write ('')
+            self.debugfile.write (f'coordstrstr= {coordstr:s}')
         
         coordstr = coordstr.split(' ')[0].lower()
 	    
         if self.debug:
-            logging.debug ('')
-            logging.debug (f'coordstr= {coordstr:s}')
+            self.debugfile.write ('')
+            self.debugfile.write (f'coordstr= {coordstr:s}')
 
         retstr = ''
         for key in self.fconvert:
 
             if self.debug:
-                logging.debug ('')
-                logging.debug (f'key= {key:s}')
-                logging.debug (f'value= {self.fconvert[key]:s}')
-                logging.debug (f'key.strip= [{key.strip():s}]')
-                logging.debug (f'coordstr.strip= [{coordstr.strip():s}]')
+                self.debugfile.write ('')
+                self.debugfile.write (f'key= {key:s}')
+                self.debugfile.write (f'value= {self.fconvert[key]:s}')
+                self.debugfile.write (f'key.strip= [{key.strip():s}]')
+                self.debugfile.write (f'coordstr.strip= [{coordstr.strip():s}]')
        
             if (coordstr.strip() == key.strip()):
                 retstr = self.fconvert[key]
                 break
 	        
         if self.debug:
-            logging.debug ('')
-            logging.debug (f'retstr= {retstr:s}')
+            self.debugfile.write ('')
+            self.debugfile.write (f'retstr= {retstr:s}')
 
         
         if (len(retstr) == 0):
             msg = 'Invalid coordinate system: ' + coordstr 
         
             if self.debug:
-                logging.debug ('')
-                logging.debug (f'msg= {msg:s}')
+                self.debugfile.write ('')
+                self.debugfile.write (f'msg= {msg:s}')
 
             raise Exception (msg)
 
@@ -1035,10 +1033,10 @@ class ADQL:
         ntags = len(tags)
 
         if self.debug:
-            logging.debug(f'ntags= {ntags:d}')
+            self.debugfile.write(f'ntags= {ntags:d}')
             
 #            for i in range (ntags):
-#                logging.debug (f'i= {i:d} tag={tags[i]:s}')
+#                self.debugfile.write (f'i= {i:d} tag={tags[i]:s}')
 
 
         selectstr = ''
@@ -1050,7 +1048,7 @@ class ADQL:
         for i in range (ntags):
 		
             if self.debug:
-                logging.debug (f'i= {i:d} tag={tags[i]:s}')
+                self.debugfile.write (f'i= {i:d} tag={tags[i]:s}')
         
             if (tags[i].lower() == 'select'):
                 selectstr = tags[i].lower()
@@ -1064,16 +1062,16 @@ class ADQL:
                     l = l + 1
           
                 if self.debug:
-                    logging.debug (f'l= {l:d} tag={tags[l]:s}')
+                    self.debugfile.write (f'l= {l:d} tag={tags[l]:s}')
         
                 countstr = tags[l].lower()
                 indx_count = l
 
 
         if self.debug:
-            logging.debug (f'selectstr= {selectstr:s}')
-            logging.debug (f'topstr= {topstr:s} indx_top={indx_top:d}')
-            logging.debug (f'countstr= {countstr:s} indx_count={indx_count:d}')
+            self.debugfile.write (f'selectstr= {selectstr:s}')
+            self.debugfile.write (f'topstr= {topstr:s} indx_top={indx_top:d}')
+            self.debugfile.write (f'countstr= {countstr:s} indx_count={indx_count:d}')
         
         if(selectstr != 'select'):
             raise Exception('Query is not a SELECT statemement.')
@@ -1205,18 +1203,18 @@ class ADQL:
         
         
         if(self.debug):
-            logging.debug('============================')
-            logging.debug('geomFuncs: ')
-            logging.debug(self.geomFuncs)
-            logging.debug('geomArgs: ')
-            logging.debug(self.geomArgs)
-            logging.debug('')
-            logging.debug('============================')
-            logging.debug('')
-            logging.debug('geomVals: ')
-            logging.debug(self.geomVals)
-            logging.debug('')
-            logging.debug('============================')
+            self.debugfile.write('============================')
+            self.debugfile.write('geomFuncs: ')
+            self.debugfile.write(self.geomFuncs)
+            self.debugfile.write('geomArgs: ')
+            self.debugfile.write(self.geomArgs)
+            self.debugfile.write('')
+            self.debugfile.write('============================')
+            self.debugfile.write('')
+            self.debugfile.write('geomVals: ')
+            self.debugfile.write(self.geomVals)
+            self.debugfile.write('')
+            self.debugfile.write('============================')
         outstr = ''
         
         indx = 0
@@ -1271,7 +1269,7 @@ class ADQL:
         for i in range(len(self.adql_tokens)):
 
             if(self.debug):
-                logging.debug('processing token: ' + self.adql_tokens[i])
+                self.debugfile.write('processing token: ' + self.adql_tokens[i])
 
 
             # GEOM placeholder processing
@@ -1279,12 +1277,12 @@ class ADQL:
             if(self.adql_tokens[i] == 'GEOM'):
 
                 if(self.debug):
-                    logging.debug(f'call __geomConstraint: indx= {indx:d}')
+                    self.debugfile.write(f'call __geomConstraint: indx= {indx:d}')
 
                 constraint = self._geomConstraint(indx)
 
                 if(self.debug):
-                    logging.debug('returned __geomConstraint')
+                    self.debugfile.write('returned __geomConstraint')
 
                 outstr = outstr + constraint
                 indx = indx + 1
@@ -1308,8 +1306,8 @@ class ADQL:
                 outstr = outstr + self.adql_tokens[i]
 
             if(self.debug):
-                logging.debug('')
-                logging.debug(f'output:  {outstr:s}')
+                self.debugfile.write('')
+                self.debugfile.write(f'output:  {outstr:s}')
 
 
         if(haveTop and where_start == -1 and where_end == -1):
@@ -1320,8 +1318,8 @@ class ADQL:
 
         
         if(self.debug):
-            logging.debug('')
-            logging.debug(f'output:  {outstr:s}')
+            self.debugfile.write('')
+            self.debugfile.write(f'output:  {outstr:s}')
 
 
         return outstr
