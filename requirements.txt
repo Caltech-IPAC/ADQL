@@ -1,5 +1,5 @@
-pytest
+spatial_index
 numpy
 astropy
 sqlparse
-spatial_index
+pytest
