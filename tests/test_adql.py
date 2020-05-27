@@ -29,8 +29,10 @@ while True:
 
 def test_adql(adqlstr,sqlstr):
 
-    adql = ADQL(level=20, colname='htm20', debugfile=None,
-               mode=SpatialIndex.HTM, encoding=SpatialIndex.BASE10)
+    adql = ADQL(level=20, debugfile=None,
+                racol='ra', deccol='dec',
+                xcol = 'x', ycol='y', zcol='z', indxcol='htm20',
+                mode=SpatialIndex.HTM, encoding=SpatialIndex.BASE10)
 
     try:
         sqlnew = adql.sql(adqlstr)
