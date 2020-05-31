@@ -1,7 +1,5 @@
 
-============================
 ADQL to Local SQL Translator
-============================
 
 ADQL is a variant of SQL that is understood by no DBMSs, the main difference 
 being support for sky spatial constraints.  
@@ -18,8 +16,12 @@ The hope is that this code can be leveraged by others who either wish to add
 spatial indexing to their DBMS the same way we have or would like a starting
 place for developing code around their own DBMS.
 
-This package is complementary to but independent from our implemetation of the
+This package is complementary to but independent of our implemetation of the
 IVOA Table Access Protocol (TAP); a web service for managing remote database
 requests for astronomy in a general way.  TAP manages requests/results and is
 generally fed ADQL.  This ADQL translator is used by our TAP implementation
 to turn ADQL into SQL the local DBMS can handle directly.
+
+Since this is pure Python, the PyPI package can be built with a simple
+
+   python setup.py bdist
