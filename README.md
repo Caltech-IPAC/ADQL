@@ -23,5 +23,4 @@ generally fed ADQL.  This ADQL translator is used by our TAP implementation
 to turn ADQL into SQL the local DBMS can handle directly.
 
 Since this is pure Python, the PyPI package can be built with a simple
-
-   python setup.py bdist
+"<i>python setup.py bdist_wheel</i>".
