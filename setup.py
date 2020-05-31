@@ -8,7 +8,7 @@ setup(
     author = 'John Good',
     author_email = 'jcg@ipac.caltech.edu',
     description = 'Utility for converting ADQL to local SQL syntax.',
-    long_description = open('README.txt').read(),
+    long_description = open('README.md').read(),
     license = 'LICENSE',
     keywords = 'astronomy database ADQL SQL',
     url = 'https://github.com/Caltech-IPAC/ADQL',
