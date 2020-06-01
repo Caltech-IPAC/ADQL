@@ -6,6 +6,7 @@ from spatial_index import SpatialIndex
 
 infile  = open('tests/indata.txt',  'r')
 outfile = open('tests/outdata.txt', 'r')
+newfile = open('tests/newdata.txt', 'w+')
  
 values = []
 
@@ -40,5 +41,7 @@ def test_adql(adqlstr,sqlstr):
     except Exception as adql_error:
 
         sqlnew = str(adql_error)
+
+    newfile.write(sqlnew + '\n')
 
     assert sqlnew == sqlstr
