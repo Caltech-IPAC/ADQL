@@ -12,5 +12,6 @@ setup(
     license = 'LICENSE',
     keywords = 'astronomy database ADQL SQL',
     url = 'https://github.com/Caltech-IPAC/ADQL',
-    install_requires=['spatial_index']
+    install_requires=['spatial_index'],
+    packages=['ADQL']
 )

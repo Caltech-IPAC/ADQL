@@ -1,6 +1,6 @@
 import pytest
 
-from adql import ADQL
+from ADQL.adql import ADQL
 from spatial_index import SpatialIndex
 
 
