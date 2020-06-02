@@ -1218,7 +1218,9 @@ class ADQL:
 
 
         # Check for the location of the start and end of the WHERE clause.
-        # Not needed if we don't have a 'TOP n' constraint.
+        # Not needed if we don't have a 'TOP n' constraint.  An oddity:
+        # The same sqlparse library under Linux and OSX parse differently;
+        # e.g. in one "group by" is a single token and in the other it is three.
 
         indx = 0
         outstr = ''
@@ -1247,6 +1249,12 @@ class ADQL:
                                 break;
                             elif(self.adql_tokens[j].lower() != ' '):
                                 break;
+
+                elif(where_end == -1 and i < imax
+                and (   self.adql_tokens[i].lower() == 'group by'
+                     or self.adql_tokens[i].lower() == 'order by')
+                and self.adql_tokens[i+1].lower() == ' '):
+                    where_end = i
 
                 elif(where_end == -1 and i < imax 
                 and  self.adql_tokens[i].lower() == 'having'):
