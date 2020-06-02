@@ -1028,12 +1028,12 @@ class ADQL:
 
         patched_adql = adql
 
-        patched_adql = re.sub('contains\s*\(', 'contains(', patched_adql, flags=re.IGNORECASE)
-        patched_adql = re.sub('polygon\s*\(',  'polygon(',  patched_adql, flags=re.IGNORECASE)
-        patched_adql = re.sub('circle\s*\(',   'circle(',   patched_adql, flags=re.IGNORECASE)
-        patched_adql = re.sub('point\s*\(',    'point(',    patched_adql, flags=re.IGNORECASE)
-        patched_adql = re.sub('box\s*\(',      'box(',      patched_adql, flags=re.IGNORECASE)
-        patched_adql = re.sub('distance\s*\(', 'distance(', patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'contains\s*\(', r'contains(', patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'polygon\s*\(',  r'polygon(',  patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'circle\s*\(',   r'circle(',   patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'point\s*\(',    r'point(',    patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'box\s*\(',      r'box(',      patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'distance\s*\(', r'distance(', patched_adql, flags=re.IGNORECASE)
 
         tags = patched_adql.split(' ')
 
