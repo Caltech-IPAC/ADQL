@@ -129,6 +129,7 @@ class ADQL:
                          'galactic'      : 'galactic',
                          'supergalactic' : 'supergalactic'}
 
+
     def _parseADQL(self, stmt):
 
         # This function doesn't actually parse the AQDL; that has
@@ -210,6 +211,7 @@ class ADQL:
 
             if(self.debug):
 
+
                 # STATEMENT
 
                 # By the time we get here we should already be inside a
@@ -218,6 +220,7 @@ class ADQL:
                 if(isinstance(token, sqlparse.sql.Statement)):
                     self.debugfile.write(self.depth + 'Statement:\n')
 
+
                 # COMMENT
 
                 # Our use case doesn't allow for comments but we'll leave this
@@ -225,6 +228,7 @@ class ADQL:
 
                 elif(isinstance(token, sqlparse.sql.Comment)):
                     self.debugfile.write(self.depth + 'Comment:\n')
+
 
                 # WHERE
 
@@ -235,6 +239,7 @@ class ADQL:
                 elif(isinstance(token, sqlparse.sql.Where)):
                     self.debugfile.write(self.depth + 'Where:\n')
 
+
                 # IDENTIFIERLIST
 
                 # If we are in the middle of processing a "contains()"
@@ -244,6 +249,7 @@ class ADQL:
                 elif(isinstance(token, sqlparse.sql.IdentifierList)):
                     self.debugfile.write(self.depth + 'IdentifierList:\n')
 
+
                 # TOKENLIST
 
                 # Like PARENTHESIS, we can let the TOKEN logic deal with
@@ -251,6 +257,7 @@ class ADQL:
 
                 elif(isinstance(token, sqlparse.sql.TokenList)):
                     self.debugfile.write(self.depth + 'TokenList:\n')
+
 
                 # IDENTIFIER
 
@@ -260,6 +267,7 @@ class ADQL:
                 elif(isinstance(token, sqlparse.sql.Identifier)):
                     self.debugfile.write(self.depth + 'Identifier:\n')
 
+
                 # COMPARISON
 
                 # There shouldn't be any comparisons inside the "contains()"
@@ -268,6 +276,7 @@ class ADQL:
 
                 elif(isinstance(token, sqlparse.sql.Comparison)):
                     self.debugfile.write(self.depth + 'Comparison:\n')
+
 
                 # PARENTHESIS
 
@@ -291,6 +300,7 @@ class ADQL:
                 or isinstance(token, sqlparse.sql.Parenthesis)):
                     self._parseADQL(token)
 
+
             # TOKEN
 
             # Almost all of the function parameter collection is here.
@@ -309,6 +319,7 @@ class ADQL:
 
                 if(self.debug):
                     self.debugfile.write(self.depth + '[' + str(token) + ']\n')
+
 
                 # Check through all the TOKENS.  Look for stuff associated with
                 # the special ADQL "geometry" functions.
@@ -338,6 +349,7 @@ class ADQL:
 
                 except Exception:
                     pass
+
 
                 # Level 0: check for primary functions
 
@@ -372,6 +384,7 @@ class ADQL:
                         self.adql_tokens.append(str(token))
                         self.closing = False
 
+
                 # Level 1: check for support functions
 
                 elif(self.funcLevel == 1):
@@ -405,6 +418,7 @@ class ADQL:
                         self.func['name'] = 'jcg'
                         self.gargs.append(token.value)
 
+
                 # Level 2: Finally, all non-punctuation/whitespace
                 # are added as level-2 arguments.
 
@@ -419,6 +433,7 @@ class ADQL:
                             self.args.append(token.value)
 
         self.depth = old_depth
+
 
     def _geomConstraint(self, i):
 
@@ -724,6 +739,7 @@ class ADQL:
 
             geomstr = ''
 
+
             # Database column first
 
             if(     func1 == 'point'
@@ -860,14 +876,12 @@ class ADQL:
         return geomstr
 
 
-
     def _is_number(self, s):
         try:
             float(s)
             return True
         except ValueError:
             return False
-
 
 
     def _frame_lookup(self, str_in):
@@ -904,7 +918,6 @@ class ADQL:
             raise Exception(msg)
 
         return retstr
-
 
 
     def _box(self, lon, lat, width, height):
@@ -981,7 +994,6 @@ class ADQL:
             polygon.append(latc)
 
         return polygon
-
 
 
     def sql(self, adql):
