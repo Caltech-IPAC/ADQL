@@ -8,7 +8,9 @@ from spatial_index import SpatialIndex
  
 adql_string = []
 
-adql_string.append("select TOP 100 psc.ra, psc.dec distance(point('icrs', psc.ra, psc.dec), point('GALACTIC', 234.56, 34.567)) as dist from iraspsc as psc where contains(point('icrs', psc.ra, psc.dec), circle('GALACTIC', 234.56, 34.567, 0.006)) = 1 and psc.glat > 34.567 order by dec desc")
+# adql_string.append("select TOP 100 psc.ra, psc.dec distance(point('icrs', psc.ra, psc.dec), point('GALACTIC', 234.56, 34.567)) as dist from iraspsc as psc where contains(point('icrs', psc.ra, psc.dec), circle('GALACTIC', 234.56, 34.567, 0.006)) = 1 and psc.glat > 34.567 order by dec desc")
+adql_string.append("select ra, dec from iraspsc where contains(point('icrs', ra, dec), box('ECLIPTIC', 233.56, 34.567, 1., 2.)) = 1 order by dec desc")
+
 
 for i in range(len(adql_string)):
 

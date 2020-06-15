@@ -541,7 +541,8 @@ class ADQL:
                 except Exception as e:
                     raise Exception(str(e) + ' in point() function.\n')
 
-                if(args1[0].lower() != 'icrs'):
+
+                if(args1[0].lower() != "'icrs'" and args1[0].lower() != '"icrs"'):
                     raise Exception('Spatial index coordinate system must be "ICRS".\n')
 
                 index = 1
@@ -838,7 +839,7 @@ class ADQL:
             except Exception as e:
                 raise Exception(str(e) + ' in point() function.\n')
 
-            if(args1[0].lower() != 'icrs'):
+            if(args1[0].lower() != "'icrs'" and args1[0].lower() != '"icrs"'):
                 raise Exception('Spatial index coordinate system must be "ICRS".\n')
 
             index = 1
