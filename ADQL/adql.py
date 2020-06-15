@@ -94,6 +94,8 @@ class ADQL:
 
         self.mode     = mode
         self.level    = level
+        self.racol    = racol
+        self.deccol   = deccol
         self.xcol     = xcol
         self.ycol     = ycol
         self.zcol     = zcol
@@ -499,7 +501,7 @@ class ADQL:
         funcName = self.funcData[i]['name']
 
 
-        # CONTAINS FUNCTION
+        # CONTAINS() FUNCTION
 
         if funcName == 'contains':
 
@@ -512,25 +514,26 @@ class ADQL:
             val   = self.funcData[i]['val']
 
 
-            # Point in circle
+            # All three CONTAINS() variants start with a POINT()
+            # so we will parse that out first.
 
-            spt = SpatialIndex()
+            # When we deal with ra,dec column names we need to check to
+            # see if there is a table alias prepended (e.g. "a.ra").  
+            # This will happen if there are joins and can happen any time
+            # the user chooses to use this formalism.
+
+            # We also need to check to see if the ra,dec columns used in
+            # these functions are the ones specified as having spatial
+            # indices since we are going to switch over to using the
+            # associated x,y,z columns.
+
+            # Finally, we need to the use is internally consistent (i.e.,
+            # that if we hae prefixes they are there for both quantities
+            # and the same value.
 
             nargs1 = len(args1)
-            nargs2 = len(args2)
 
-            geomstr = ''
-
-            if( func1 == 'point'
-            and nargs1 == 3
-            and self._is_number(args1[1]) is False
-            and self._is_number(args1[2]) is False
-
-            and func2 == 'circle'
-            and nargs2 == 4
-            and self._is_number(args2[1]) is True
-            and self._is_number(args2[2]) is True
-            and self._is_number(args2[3]) is True):
+            if func1 == 'point' and nargs1 >= 3:
 
                 coordsys = ''
                 try:
@@ -538,20 +541,82 @@ class ADQL:
                 except Exception as e:
                     raise Exception(str(e) + ' in point() function.\n')
 
-                racol  = args1[1]
-                deccol = args1[2]
+                index = 1
 
-                if(racol != 'ra'):
-                    raise Exception('Invalid ra column reference in point() function.\n')
+                # 'ra' processing
 
-                if(deccol != 'dec'):
-                    raise Exception('Invalid dec column reference in point() function.\n')
+                if(args1[index] == 'DOT'):
 
+                    if(index+2 > nargs1-1):
+                        raise Exception('Invalid arguments to POINT() function.\n')
+
+                    prefix1 = args1[index+1]
+                    racol   = args1[index+2]
+                    index   = index + 3
+                else:
+                    prefix1 = None
+                    racol   = args1[index]
+                    index   = index + 1
+
+                # 'dec' processing
+
+                if(args1[index] == 'DOT'):
+
+                    if(index+2 > nargs1-1):
+                        raise Exception('Invalid arguments to POINT() function.\n')
+
+                    prefix2 = args1[index+1]
+                    deccol  = args1[index+2]
+                    index   = index + 3
+                else:
+
+                    if(index > nargs1-1):
+                        raise Exception('Invalid arguments to POINT() function.\n')
+
+                    prefix2 = None
+                    deccol  = args1[index]
+                    index   = index + 1
+
+                # Now check validity and consistency of values and construct
+                # names to be use in output constraint
+
+                if(racol != self.racol):
+                    raise Exception('Invalid RA column reference in point() function (should be ' + self.racol + ').\n')
+
+                if(deccol != self.deccol):
+                    raise Exception('Invalid Dec column reference in point() function (should be ' + self.deccol + ').\n')
+
+                if(prefix1 != prefix2):
+                    raise Exception('RA and Dec table references must match.\n')
 
                 try:
                     coordsys = self._frame_lookup(args2[0])
                 except Exception as e:
                     raise Exception(str(e) + ' in circle function.\n')
+
+                if prefix1 is None:
+                    xcolfinal = self.xcol
+                    ycolfinal = self.ycol
+                    zcolfinal = self.zcol
+                    indxfinal = self.indxcol
+                else:
+                    xcolfinal = prefix1 + '.' + self.xcol
+                    ycolfinal = prefix1 + '.' + self.ycol
+                    zcolfinal = prefix1 + '.' + self.zcol
+                    indxfinal = prefix1 + '.' + self.indxcol
+            else:
+                raise Exception('The first argument to a CONTAIN() function must be POINT(system,racol,deccol)')
+
+
+            # CONTAINS() FUNCTION: POINT IN CIRCLE
+
+            spt = SpatialIndex()
+
+            nargs2 = len(args2)
+
+            geomstr = ''
+
+            if(func2 == 'circle' and nargs2 >= 4):
 
                 lon = float(args2[1])
                 lat = float(args2[2])
@@ -580,8 +645,8 @@ class ADQL:
 
                 try:
                     retval = spt.cone_search(ra, dec, radius, self.mode, \
-                        self.level, self.xcol, self.ycol, self.zcol, \
-                        self.indxcol, self.encoding)
+                             self.level, xcolfinal, ycolfinal, zcolfinal, \
+                             indxfinal, self.encoding)
 
                 except Exception as e:
                     raise Exception(str(e))
@@ -593,15 +658,10 @@ class ADQL:
                 else:
                     geomstr = "(" + retval['geom_constraint'] + ") AND (" + retval['index_constraint'] + ")"
 
-            # Point in polygon
 
-            elif(func1 == 'point'
-             and nargs1 == 3
-             and self._is_number(args1[1]) is False
-             and self._is_number(args1[2]) is False
+            # CONTAINS() FUNCTON: POINT IN POLYGON
 
-    #         and func2 == 'polygon' and nargs2 >= 7):
-             and func2 == 'polygon'):
+            elif func2 == 'polygon':
 
                 if (nargs2 < 7):
                     raise Exception('Polygon specification requires at least 6 numbers.')
@@ -643,9 +703,9 @@ class ADQL:
                     ra.append (raj)
                     dec.append(decj)
 
-
-                retval = spt.polygon_search(npts, ra, dec, self.mode, self.level, self.xcol, self.ycol, self.zcol, self.indxcol, self.encoding)
-
+                retval = spt.polygon_search(npts, ra, dec, self.mode, 
+                        self.level, xcolfinal, ycolfinal, zcolfinal, 
+                        indxfinal, self.encoding)
 
                 if(val == '0'):
                     retval['geom_constraint'] = retval['geom_constraint'].replace('<=', '>')
@@ -655,13 +715,9 @@ class ADQL:
                     geomstr = "(" + retval['geom_constraint'] + ") AND (" + retval['index_constraint'] + ")"
 
 
-            # Point in box
+            # CONTAINS() FUNCTION: POINT IN BOX
 
-            elif(func1 == 'point'
-             and nargs1 == 3
-             and self._is_number(args1[1]) is False
-             and self._is_number(args1[2]) is False
-             and func2 == 'box'):
+            elif func2 == 'box':
 
                 try:
                     coordsys = self._frame_lookup(args1[0])
@@ -705,7 +761,9 @@ class ADQL:
 
                 npts = 4
 
-                retval = spt.polygon_search(npts, ra, dec, self.mode, self.level, self.xcol, self.ycol, self.zcol, self.indxcol, self.encoding)
+                retval = spt.polygon_search(npts, ra, dec, self.mode, self.level,
+                                            xcolfinal, ycolfinal, zcolfinal,
+                                            indxfinal, self.encoding)
 
                 if(val == '0'):
                     retval['geom_constraint'] = retval['geom_constraint'].replace('<=', '>')
@@ -715,7 +773,8 @@ class ADQL:
                     geomstr = "(" + retval['geom_constraint'] + ") AND (" + retval['index_constraint'] + ")"
 
             else:
-                raise Exception('Invalid CONTAINS() clause')
+                raise Exception('The second argument to a CONTAIN() function must be CIRCLE(), POLYGON(), or BOX()')
+
 
 
         # DISTANCE FUNCTION
@@ -728,144 +787,156 @@ class ADQL:
             args1 = self.funcData[i]['args'][0]['args']
             args2 = self.funcData[i]['args'][1]['args']
 
-            if func1 != 'point' or func1 != 'point':
+            if func1 != 'point' or func2 != 'point':
                 raise Exception('DISTANCE function arguments must be POINTs.')
 
             nargs1 = len(args1)
             nargs2 = len(args2)
 
-            print(func1, args1, nargs1)
-            print(func2, args2, nargs2)
-
             geomstr = ''
 
 
-            # Database column first
+            # Check the arguments for the two POINT fuctions to see if either
+            # references the ra,dec columns and reorder the two if the ra,dec
+            # column POINT is given second.
 
-            if(     func1 == 'point'
-                and nargs1 == 3
-                and self._is_number(args1[1]) is False
-                and self._is_number(args1[2]) is False
+            iscol1 = False
+            for i in range(0,nargs1):
+                if args1[i] == self.racol:
+                    iscol1 = True
+                if args1[i] == self.deccol:
+                    iscol1 = True
 
-                and func2 == 'point'
-                and nargs2 == 3
-                and self._is_number(args2[1]) is True
-                and self._is_number(args2[2]) is True ):
+            iscol2 = False
+            for i in range(0,nargs2):
+                if args2[i] == self.racol:
+                    iscol2 = True
+                if args2[i] == self.deccol:
+                    iscol2 = True
 
-                coordsys = ''
-                try:
-                    coordsys = self._frame_lookup(args1[0])
-                except Exception as e:
-                    raise Exception(str(e) + ' in point() function.\n')
+            if(iscol1 is False and iscol2 is False):
+                raise Exception('One of the DISTANCE function arguments must be POINT(system, racol, deccol).')
 
-                racol  = args1[1]
-                deccol = args1[2]
+            elif(iscol1 is True and iscol2 is True):
+                raise Exception('Only one of the DISTANCE function arguments can be POINT(system, racol, deccol).')
 
-                if(racol != 'ra'):
-                    raise Exception('Invalid ra column reference in point() function.\n')
-
-                if(deccol != 'dec'):
-                    raise Exception('Invalid dec column reference in point() function.\n')
-
-                try:
-                    coordsys = self._frame_lookup(args2[0])
-                except Exception as e:
-                    raise Exception(str(e) + ' in point function.\n')
-
-                lon = float(args2[1])
-                lat = float(args2[2])
-
-                if(lat < -90.):
-                    raise Exception('Invalid latitude value in circle() function.')
-
-                if(lat > 90.):
-                    raise Exception('Invalid latitude value in circle() function.')
-
-                try:
-                    coord = SkyCoord(lon * u.degree, lat * u.degree, frame=coordsys)
-                except Exception as e:
-                    raise Exception(str(e))
-
-                ra  = coord.icrs.ra.deg
-                dec = coord.icrs.dec.deg
-
-                try:
-                    dtr = math.atan(1.) / 45.
-
-                    x = math.cos(ra * dtr) * math.cos(dec * dtr)
-                    y = math.sin(ra * dtr) * math.cos(dec * dtr)
-                    z =                      math.sin(dec*dtr)
-
-                    geomstr = 'acos(x*(' + str(x) + ')+y*(' + str(y) + ')+z*(' + str(z) + '))/' + str(dtr)
-
-                    print(geomstr)
-
-                except Exception as e:
-                    raise Exception(str(e))
+            elif(iscol1 == False and iscol2 == True):
+                args1 = self.funcData[i]['args'][1]['args']
+                args2 = self.funcData[i]['args'][0]['args']
+                nargs1 = len(args1)
+                nargs2 = len(args2)
 
 
-            # Database column second
+            # "First" POINT for DISTANCE (the one with ra,dec columns)
 
-            if( func1 == 'point'
-            and nargs1 == 3
-            and self._is_number(args1[1]) is True
-            and self._is_number(args1[2]) is True
+            coordsys = ''
+            try:
+                coordsys = self._frame_lookup(args1[0])
+            except Exception as e:
+                raise Exception(str(e) + ' in point() function.\n')
 
-            and func2 == 'point'
-            and nargs2 == 3
-            and self._is_number(args2[1]) is False
-            and self._is_number(args2[2]) is False ):
+            index = 1
 
-                coordsys = ''
-                try:
-                    coordsys = self._frame_lookup(args1[1])
-                except Exception as e:
-                    raise Exception(str(e) + ' in point() function.\n')
+            # 'ra' processing
 
-                racol  = args2[1]
-                deccol = args2[2]
+            if(args1[index] == 'DOT'):
 
-                if(racol != 'ra'):
-                    raise Exception('Invalid ra column reference in point() function.\n')
+                if(index+2 > nargs1-1):
+                    raise Exception('Invalid arguments to POINT() function.\n')
 
-                if(deccol != 'dec'):
-                    raise Exception('Invalid dec column reference in point() function.\n')
+                prefix1 = args1[index+1]
+                racol   = args1[index+2]
+                index   = index + 3
+            else:
+                prefix1 = None
+                racol   = args1[index]
+                index   = index + 1
 
-                try:
-                    coordsys = self._frame_lookup(args1[0])
-                except Exception as e:
-                    raise Exception(str(e) + ' in point function.\n')
+            # 'dec' processing
 
-                lon = float(args1[1])
-                lat = float(args1[2])
+            if(args1[index] == 'DOT'):
 
-                if(lat < -90.):
-                    raise Exception('Invalid latitude value in circle() function.')
+                if(index+2 > nargs1-1):
+                    raise Exception('Invalid arguments to POINT() function.\n')
 
-                if(lat > 90.):
-                    raise Exception('Invalid latitude value in circle() function.')
+                prefix2 = args1[index+1]
+                deccol  = args1[index+2]
+                index   = index + 3
+            else:
 
-                try:
-                    coord = SkyCoord(lon * u.degree, lat * u.degree, frame=coordsys)
-                except Exception as e:
-                    raise Exception(str(e))
+                if(index > nargs1-1):
+                    raise Exception('Invalid arguments to POINT() function.\n')
 
-                ra  = coord.icrs.ra.deg
-                dec = coord.icrs.dec.deg
+                prefix2 = None
+                deccol  = args1[index]
+                index   = index + 1
 
-                try:
-                    dtr = math.atan(1.) / 45.
+            # Now check validity and consistency of values and construct
+            # names to be use in output constraint
 
-                    x = math.cos(ra * dtr) * math.cos(dec * dtr)
-                    y = math.sin(ra * dtr) * math.cos(dec * dtr)
-                    z =                    math.sin(dec * dtr)
+            if(racol != self.racol):
+                raise Exception('Invalid RA column reference in point() function (should be ' + self.racol + ').\n')
 
-                    geomstr = 'acos(x*(' + str(x) + ')+y*(' + str(y) + ')+z*(' + str(z) + '))/' + str(dtr)
+            if(deccol != self.deccol):
+                raise Exception('Invalid Dec column reference in point() function (should be ' + self.deccol + ').\n')
 
-                    print(geomstr)
+            if(prefix1 != prefix2):
+                raise Exception('RA and Dec table references must match.\n')
 
-                except Exception as e:
-                    raise Exception(str(e))
+            try:
+                coordsys = self._frame_lookup(args2[0])
+            except Exception as e:
+                raise Exception(str(e) + ' in circle function.\n')
+
+            if prefix1 is None:
+                xcolfinal = self.xcol
+                ycolfinal = self.ycol
+                zcolfinal = self.zcol
+                indxfinal = self.indxcol
+            else:
+                xcolfinal = prefix1 + '.' + self.xcol
+                ycolfinal = prefix1 + '.' + self.ycol
+                zcolfinal = prefix1 + '.' + self.zcol
+                indxfinal = prefix1 + '.' + self.indxcol
+
+
+            # "Second" POINT for DISTANCE (the one with fixed coordinates)
+
+            try:
+                coordsys = self._frame_lookup(args2[0])
+            except Exception as e:
+                raise Exception(str(e) + ' in point function.\n')
+
+            lon = float(args2[1])
+            lat = float(args2[2])
+
+            if(lat < -90.):
+                raise Exception('Invalid latitude value in circle() function.')
+
+            if(lat > 90.):
+                raise Exception('Invalid latitude value in circle() function.')
+
+            try:
+                coord = SkyCoord(lon * u.degree, lat * u.degree, frame=coordsys)
+            except Exception as e:
+                raise Exception(str(e))
+
+            ra  = coord.icrs.ra.deg
+            dec = coord.icrs.dec.deg
+
+            try:
+                dtr = math.atan(1.) / 45.
+
+                x = math.cos(ra * dtr) * math.cos(dec * dtr)
+                y = math.sin(ra * dtr) * math.cos(dec * dtr)
+                z =                      math.sin(dec*dtr)
+
+                geomstr = 'acos(' + xcolfinal + '*(' + str(x) + ')+' \
+                                  + ycolfinal + '*(' + str(y) + ')+' \
+                                  + zcolfinal + '*(' + str(z) + '))/' + str(dtr)
+
+            except Exception as e:
+                raise Exception(str(e))
 
 
         # Unrecognize function

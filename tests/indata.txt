@@ -13,3 +13,4 @@ select ra, dec from iraspsc where (contains(point('galactic', ra, dec), polygon(
 select ra, dec from iraspsc where (contains (point    ('galactic', ra, dec), polygoN  ('ECLIPTIC', 233.56, 34.567, 233.56, 33.567, 234.56, 33.567, 234.56, 34.567)) = 1 order by dec desc
 select ra,dec,htm20 from exo_tap.ps where contains(point('icrs',ra,dec),circle('icrs',262.0,17.0,1.0))=1
 select ra,dec,htm20 from exo_tap.ps where contains(point('icrs',ra,dec),circle('icrs',293.5607117,-23.1312775,1.0))=1
+select TOP 100 psc.ra, psc.dec distance(point('icrs', psc.ra, psc.dec), point('GALACTIC', 234.56, 34.567)) as dist from iraspsc as psc where contains(point('icrs', psc.ra, psc.dec), circle('GALACTIC', 234.56, 34.567, 0.006)) = 1 and psc.glat > 34.567 order by dec desc
