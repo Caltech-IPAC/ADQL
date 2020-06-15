@@ -541,6 +541,9 @@ class ADQL:
                 except Exception as e:
                     raise Exception(str(e) + ' in point() function.\n')
 
+                if(args1[0].lower() != 'icrs'):
+                    raise Exception('Spatial index coordinate system must be "ICRS".\n')
+
                 index = 1
 
                 # 'ra' processing
@@ -834,6 +837,9 @@ class ADQL:
                 coordsys = self._frame_lookup(args1[0])
             except Exception as e:
                 raise Exception(str(e) + ' in point() function.\n')
+
+            if(args1[0].lower() != 'icrs'):
+                raise Exception('Spatial index coordinate system must be "ICRS".\n')
 
             index = 1
 
