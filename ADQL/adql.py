@@ -15,7 +15,7 @@ class ADQL:
     ADQL class
 
     ADQL is a variant of SQL that is understood by no DBMSs, the main
-    difference being support for sky spatial constraints.
+    difference from generic SQL being support for sky spatial constraints.
 
     One approach to supporting ADQL is to extend the DBMS with these
     ADQL-specific constructs.  The alternate approach taken here is
@@ -1097,12 +1097,15 @@ class ADQL:
 
         patched_adql = adql
 
+        patched_adql = re.sub(r'\n',            r' ',         patched_adql, flags=re.IGNORECASE)
         patched_adql = re.sub(r'contains\s*\(', r'contains(', patched_adql, flags=re.IGNORECASE)
         patched_adql = re.sub(r'polygon\s*\(',  r'polygon(',  patched_adql, flags=re.IGNORECASE)
         patched_adql = re.sub(r'circle\s*\(',   r'circle(',   patched_adql, flags=re.IGNORECASE)
         patched_adql = re.sub(r'point\s*\(',    r'point(',    patched_adql, flags=re.IGNORECASE)
         patched_adql = re.sub(r'box\s*\(',      r'box(',      patched_adql, flags=re.IGNORECASE)
         patched_adql = re.sub(r'distance\s*\(', r'distance(', patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'order\s*by',    r'order by',  patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'group\s*by',    r'group by',  patched_adql, flags=re.IGNORECASE)
 
         tags = patched_adql.split(' ')
 
