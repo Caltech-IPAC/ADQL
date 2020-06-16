@@ -57,6 +57,13 @@ class ADQL:
         level : integer, optional, default=7
             Both tesselation schemes involve a z-ordered nesting of cells.
             This parameter defines the depth used for this database table.
+        racol : string, optional, default='ra'
+            When we validate the input query, we check to see of the spatial
+            index being used conforms to the RA/Dec column names specified
+            here.  These aren't really needed for the calculations but we
+            want to prevent the user misunderstanding the indexing.
+        deccol : string, optional, default='dec'
+            See 'racol'.
         xcol : string, optional, default='x'
             The algorithm requires four special columns in the table: the
             sky position (RA, Dec) three-vector (x,y,z) coordinates (doubles)
