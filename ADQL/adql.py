@@ -101,13 +101,13 @@ class ADQL:
 
         self.mode     = mode
         self.level    = level
-        self.racol    = racol
-        self.deccol   = deccol
-        self.xcol     = xcol
-        self.ycol     = ycol
-        self.zcol     = zcol
+        self.racol    = racol.lower()
+        self.deccol   = deccol.lower()
+        self.xcol     = xcol.lower()
+        self.ycol     = ycol.lower()
+        self.zcol     = zcol.lower()
 
-        self.indxcol  = indxcol
+        self.indxcol  = indxcol.lower()
         self.encoding = encoding
 
         if indxcol is None:
@@ -520,6 +520,15 @@ class ADQL:
 
             val   = self.funcData[i]['val']
 
+            args1[0] = re.sub('"', "'", args1[0])
+            args2[0] = re.sub('"', "'", args2[0])
+
+            if(args1[0] == "''"):
+               args1[0] = "'icrs'"
+
+            if(args2[0] == "''"):
+               args2[0] = "'icrs'"
+
 
             # All three CONTAINS() variants start with a POINT()
             # so we will parse that out first.
@@ -543,11 +552,11 @@ class ADQL:
             if func1 == 'point' and nargs1 >= 3:
 
                 coordsys = ''
+
                 try:
                     coordsys = self._frame_lookup(args1[0])
                 except Exception as e:
                     raise Exception(str(e) + ' in point() function.\n')
-
 
                 if(args1[0].lower() != "'icrs'" and args1[0].lower() != '"icrs"'):
                     raise Exception('Spatial index coordinate system must be "ICRS".\n')
@@ -837,6 +846,15 @@ class ADQL:
                 nargs1 = len(args1)
                 nargs2 = len(args2)
 
+            args1[0] = re.sub('"', "'", args1[0])
+            args2[0] = re.sub('"', "'", args2[0])
+
+            if(args1[0] == "''"):
+               args1[0] = "'icrs'"
+
+            if(args2[0] == "''"):
+               args2[0] = "'icrs'"
+
 
             # "First" POINT for DISTANCE (the one with ra,dec columns)
 
@@ -989,6 +1007,9 @@ class ADQL:
 
         coordstr = str_in.strip("'")
         coordstr = coordstr.split(' ')[0].lower()
+
+        if(coordstr == ''):
+            coordstr = 'icrs'
 
         retstr = ''
         for key in self.fconvert:
