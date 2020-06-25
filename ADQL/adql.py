@@ -40,8 +40,8 @@ class ADQL:
     to turn ADQL into SQL the local DBMS can handle directly.
     """
 
-    def __init__(self, mode=SpatialIndex.HTM, level=7, encoding=None,
-                 debugfile=None, racol='ra', deccol='dec',
+    def __init__(self, dbms='oracle', mode=SpatialIndex.HTM, level=7, 
+                 encoding=None, debugfile=None, racol='ra', deccol='dec',
                  xcol='x', ycol='y', zcol='z', indxcol=None):
 
         """
@@ -50,6 +50,8 @@ class ADQL:
 
         Parameters
         ----------
+        dbms : string, optional, default='oracle'
+            Name of the target DBMS.
         mode : integer, optional, default=SpatialIndex.HTM
             The spatial indexing supports both Heirarchical Triangular Mesh
             (HTM) and Hierarchical Equal Area isoLatitude Pixelization
@@ -100,6 +102,7 @@ class ADQL:
         self.funcLevel = 0
 
         self.mode     = mode
+        self.dbms     = dbms
         self.level    = level
         self.racol    = racol.lower()
         self.deccol   = deccol.lower()
@@ -527,6 +530,18 @@ class ADQL:
                args1[0] = "'icrs'"
 
             if(args2[0] == "''"):
+               args2[0] = "'icrs'"
+
+            if(args1[0].lower() == "'j2000'"):
+               args1[0] = "'icrs'"
+
+            if(args2[0].lower() == "'j2000'"):
+               args2[0] = "'icrs'"
+
+            if(args1[0].lower() == "'fk5'"):
+               args1[0] = "'icrs'"
+
+            if(args2[0].lower() == "'fk5'"):
                args2[0] = "'icrs'"
 
 
@@ -1330,7 +1345,7 @@ class ADQL:
 
         imax = len(self.adql_tokens) - 1
 
-        if(haveTop):
+        if(self.dbms == 'oracle' and haveTop):
 
             for i in range(imax):
 
@@ -1396,12 +1411,12 @@ class ADQL:
 
             # Start of 'WHERE'
 
-            elif(haveTop and i == where_start):
+            elif(self.dbms == 'oracle' and haveTop and i == where_start):
                 outstr = outstr + self.adql_tokens[i] + ' ( '
 
             # End of 'WHERE'
 
-            elif(haveTop and i == where_end):
+            elif(self.dbms == 'oracle' and haveTop and i == where_end):
                 if(where_start == -1):
                     outstr = outstr + ' WHERE ROWNUM <= ' + str(count) + ' ' +  self.adql_tokens[i]
                 else:
@@ -1412,11 +1427,14 @@ class ADQL:
             else:
                 outstr = outstr + self.adql_tokens[i]
 
-        if(haveTop and where_start == -1 and where_end == -1):
+        if(self.dbms == 'oracle' and haveTop and where_start == -1 and where_end == -1):
             outstr = outstr + ' WHERE ROWNUM <= ' + str(count)
 
-        if(haveTop and where_start != -1 and where_end == imax+1):
+        if(self.dbms == 'oracle' and haveTop and where_start != -1 and where_end == imax+1):
             outstr = outstr + ') AND ROWNUM <= ' + str(count)
+
+        if(self.dbms == 'sqlite3' and haveTop ):
+            outstr = outstr + ' LIMIT ' + str(count)
 
         if(self.debug):
             self.debugfile.write('\n')

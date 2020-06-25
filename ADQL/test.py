@@ -17,7 +17,28 @@ for i in range(len(adql_string)):
     print('BEFORE: ', adql_string[i])
     print('')
 
-    adql = ADQL(level=20, debugfile='test.debug',
+    adql = ADQL(dbms='oracle', level=20, debugfile='test.debug',
+                racol='RA', deccol='Dec',
+                xcol = 'X', ycol='Y', zcol='Z', indxcol='HTM20',
+                mode=SpatialIndex.HTM, encoding=SpatialIndex.BASE10)
+
+    try:
+        sql_string = adql.sql(adql_string[i])
+
+        print('AFTER:  ', sql_string)
+        print('')
+
+    except Exception as adql_error:
+        print('ERROR: ', adql_error)
+
+for i in range(len(adql_string)):
+
+    print('------------------------------------')
+    print('')
+    print('BEFORE: ', adql_string[i])
+    print('')
+
+    adql = ADQL(dbms='sqlite3', level=20, debugfile='test.debug',
                 racol='RA', deccol='Dec',
                 xcol = 'X', ycol='Y', zcol='Z', indxcol='HTM20',
                 mode=SpatialIndex.HTM, encoding=SpatialIndex.BASE10)
