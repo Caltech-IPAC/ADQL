@@ -1,3 +1,9 @@
+# Copyright (c) 2020, Caltech IPAC.
+# License information at
+
+#   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
+
+
 import math
 import numpy as np
 import sqlparse
