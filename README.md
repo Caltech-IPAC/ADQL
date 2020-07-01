@@ -1,8 +1,7 @@
 # ADQL
 ADQL to Local SQL Translator
 
-ADQL is a variant of SQL that is understood by no DBMSs, the main difference 
-being support for sky spatial constraints.  
+ADQL is a variant of SQL. It is not understood by DBMSs, primnarily because ADQL supports for spatial constraints on the sky.  
 
 One approach to supporting ADQL is to extend the DBMS with these ADQL-specific
 constructs.  The alternate approach taken here is to translate the ADQL into
