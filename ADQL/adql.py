@@ -621,10 +621,10 @@ class ADQL:
                 # Now check validity and consistency of values and construct
                 # names to be use in output constraint
 
-                if(racol != self.racol):
+                if(racol.lower() != self.racol):
                     raise Exception('Invalid RA column reference in point() function (should be ' + self.racol + ').\n')
 
-                if(deccol != self.deccol):
+                if(deccol.lower() != self.deccol):
                     raise Exception('Invalid Dec column reference in point() function (should be ' + self.deccol + ').\n')
 
                 if(prefix1 != prefix2):
@@ -843,16 +843,16 @@ class ADQL:
 
             iscol1 = False
             for i in range(0,nargs1):
-                if args1[i] == self.racol:
+                if args1[i].lower() == self.racol:
                     iscol1 = True
-                if args1[i] == self.deccol:
+                if args1[i].lower() == self.deccol:
                     iscol1 = True
 
             iscol2 = False
             for i in range(0,nargs2):
-                if args2[i] == self.racol:
+                if args2[i].lower() == self.racol:
                     iscol2 = True
-                if args2[i] == self.deccol:
+                if args2[i].lower() == self.deccol:
                     iscol2 = True
 
             if(iscol1 is False and iscol2 is False):
@@ -927,10 +927,10 @@ class ADQL:
             # Now check validity and consistency of values and construct
             # names to be use in output constraint
 
-            if(racol != self.racol):
+            if(racol.lower() != self.racol):
                 raise Exception('Invalid RA column reference in point() function (should be ' + self.racol + ').\n')
 
-            if(deccol != self.deccol):
+            if(deccol.lower() != self.deccol):
                 raise Exception('Invalid Dec column reference in point() function (should be ' + self.deccol + ').\n')
 
             if(prefix1 != prefix2):
