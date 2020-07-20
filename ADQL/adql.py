@@ -1,6 +1,5 @@
 # Copyright (c) 2020, Caltech IPAC.
-# License information at
-
+# This code is released with a BSD 3-clause license. License information is at
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
 
 
