@@ -1159,16 +1159,12 @@ class ADQL:
 
         ntags = len(tags)
 
-        selectstr = ''
         topstr    = ''
         countstr  = ''
         indx_top = -1
         indx_count = -1
 
         for i in range (ntags):
-
-            if (tags[i].lower() == 'select'):
-                selectstr = tags[i].lower()
 
             if (tags[i].lower() == 'top'):
                 topstr = tags[i].lower()
@@ -1181,7 +1177,7 @@ class ADQL:
                 countstr = tags[l].lower()
                 indx_count = l
 
-        if(selectstr != 'select'):
+        if(tags[0].lower() != 'select'):
             raise Exception('Query is not a SELECT statemement.')
 
         haveTop = False
