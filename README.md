@@ -1,5 +1,8 @@
 # ADQL
-ADQL to Local SQL Translator
+
+## ADQL to Local SQL Translator
+
+Develop branch (please do any new development from here)
 
 ADQL is a variant of SQL that is understood by no DBMSs, the main difference 
 being support for sky spatial constraints.  
