@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='ADQL',
-    version='1.0.4',
+    version='1.0.5',
     author='John Good',
     author_email='jcg@ipac.caltech.edu',
     description='Utility for converting ADQL to local SQL syntax.',
