@@ -56,7 +56,8 @@ class ADQL:
         Parameters
         ----------
         dbms : string, optional, default='oracle'
-            Name of the target DBMS.
+            Name of the target DBMS.  'oracle' and 'sqlite3' are currently
+            implemented with others to come..
         mode : integer, optional, default=SpatialIndex.HTM
             The spatial indexing supports both Heirarchical Triangular Mesh
             (HTM) and Hierarchical Equal Area isoLatitude Pixelization
@@ -191,19 +192,15 @@ class ADQL:
         # ADQL (and some DBMSs) use this to limit the number
         # of records to return but other DBMSs use other
         # constructs (and not in the same place in the query).
-        # For our purpose (Oracle, this constraint goes in the
-        # WHERE clause as an additional 'AND ROWNUM <= <n>'
-        # so we will have to figure out where to insert it.
-        #
-        # ADQL (and some DBMSs) use this to limit the number
-        # of records to return but other DBMSs use other
-        # constructs (and not in the same place in the query).
-        # For our purpose (Oracle) this constraint goes in the
+        # For Oracle, this constraint goes in the
         # WHERE clause as an additional 'AND ROWNUM <= <n>'
         # so we will have to figure out where to insert it.
         #
         # However, because of the way ROWNUM works, there is
         # no simple way to implement the ADQL 'OFFSET' directive.
+        # 
+        # SQLite3 uses an explicit LIMIT clause, which can be
+        # added at the end.
 
         old_depth = self.depth
 
@@ -1125,8 +1122,9 @@ class ADQL:
     def sql(self, adql):
 
         """
-        sql() converts an ADQL statement into SQL appropriate to an
-        Oracle database with HTM or HPX spatial index columns.
+        sql() converts an ADQL statement into SQL appropriate to the
+        local database (currently Oracle or SQLite3) with HTM or HPX 
+        spatial index columns.
 
         Parameters
         ----------
@@ -1135,7 +1133,7 @@ class ADQL:
 
         Returns
         -------
-        SQL string for Oracle, including pure-SQL spatial constraints.
+        SQL string for local DBMS, including pure-SQL spatial constraints.
         """
 
 
