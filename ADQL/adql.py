@@ -513,7 +513,10 @@ class ADQL:
         #    DBMS engine itself, something we want to avoid as part
         #    of this package.
 
+        print(self.funcData)
+
         funcName = self.funcData[i]['name']
+
 
 
         # CONTAINS() FUNCTION
@@ -527,6 +530,9 @@ class ADQL:
             args2 = self.funcData[i]['args'][1]['args']
 
             val   = self.funcData[i]['val']
+
+            print(args1)
+            print(args2)
 
             args1[0] = re.sub('"', "'", args1[0])
             args2[0] = re.sub('"', "'", args2[0])
@@ -1336,6 +1342,96 @@ class ADQL:
             self.debugfile.write('\n')
 
 
+        # Check for the location of the start and end of the FROM clause.
+        # This is only needed so far for Oracle where the construct    
+        # "FROM tbl AS a" is illegal and must be converted to "FROM tbl a".
+
+        from_start = -1
+        from_end   = -1
+
+        imax = len(self.adql_tokens) - 1
+
+        if(self.dbms == 'oracle'):
+
+            for i in range(imax):
+
+                if(from_start == -1 and self.adql_tokens[i].lower() == 'from'):
+                    from_start = i
+
+                if(from_end == -1 and i < imax
+                and (   self.adql_tokens[i].lower() == 'group'
+                     or self.adql_tokens[i].lower() == 'order')
+                and self.adql_tokens[i + 1].lower() == ' '):
+
+                    if(i + 2 < imax):
+                        for j in range(i + 2,imax + 1):
+                            if(self.adql_tokens[j].lower() == 'by'):
+                                from_end = i
+                                break
+                            elif(self.adql_tokens[j].lower() != ' '):
+                                break
+
+                elif(from_end == -1 and i < imax
+                and (   self.adql_tokens[i].lower() == 'group by'
+                     or self.adql_tokens[i].lower() == 'order by')
+                and self.adql_tokens[i + 1].lower() == ' '):
+                    from_end = i
+
+                elif(from_end == -1 and i < imax
+                and  self.adql_tokens[i].lower() == 'where'):
+                    from_end = i
+
+                elif(from_end == -1 and i < imax
+                and  self.adql_tokens[i].lower() == 'having'):
+                    from_end = i
+
+                if(from_start == -1 and from_end == -1
+                                     and self.adql_tokens[i + 1].lower() == ';'):
+                    from_end = i
+
+
+            if(from_start != -1 and from_end == -1):
+                from_end = imax + 1
+
+            if(self.debug):
+                self.debugfile.write('\n')
+                self.debugfile.write('from clause: \n')
+                self.debugfile.write('\n')
+                self.debugfile.write('from_start: ' + str(from_start) + '\n')
+                self.debugfile.write('from_end:   ' + str(from_end)   + '\n')
+                self.debugfile.write('\n')
+                self.debugfile.write('=========================================================================\n')
+            
+            # Remove any extraneous "AS" tokens
+
+            while True:
+
+                done = False
+
+                for i in range(from_start+1, from_end):
+                    if(self.adql_tokens[i].lower() == 'as' 
+                            and self.adql_tokens[i-1] == ' '):
+
+                        self.adql_tokens.pop(i-1)
+                        self.adql_tokens.pop(i-1)
+                        from_end = from_end - 2
+                        break
+                        
+                    else:
+                        done = True
+
+                if done == True:
+                    break
+
+            if(self.debug):
+                self.debugfile.write('adql_tokens after Oracle "FROM" fix: \n')
+
+                for i in range(len(self.adql_tokens)):
+                    self.debugfile.write('token ' + str(i) + ':   [' +  self.adql_tokens[i] + ']\n')
+
+                self.debugfile.write('\n')
+                self.debugfile.write('=========================================================================\n')
+
 
         # Check for the location of the start and end of the WHERE clause.
         # Not needed if we don't have a 'TOP n' constraint.  An oddity:
@@ -1404,6 +1500,7 @@ class ADQL:
         # clause (or if there was no where clause, add one.
 
         for i in range(len(self.adql_tokens)):
+
 
             # GEOM placeholder processing
 
