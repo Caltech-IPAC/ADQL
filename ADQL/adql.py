@@ -57,7 +57,8 @@ class ADQL:
         Parameters
         ----------
         dbms : string, optional, default='oracle'
-            Name of the target DBMS.
+            Name of the target DBMS.  'oracle', 'sqlite3' and 'mysql' are
+            currently implemented with others to come ...
         mode : integer, optional, default=SpatialIndex.HTM
             The spatial indexing supports both Heirarchical Triangular Mesh
             (HTM) and Hierarchical Equal Area isoLatitude Pixelization
@@ -206,9 +207,9 @@ class ADQL:
         # ADQL (and some DBMSs) use this to limit the number
         # of records to return but other DBMSs use other
         # constructs (and not in the same place in the query).
-        # For our purpose (Oracle, this constraint goes in the
-        # WHERE clause as an additional 'AND ROWNUM <= <n>'
-        # so we will have to figure out where to insert it.
+        # For Oracle, this constraint goes in the WHERE clause 
+        # as an additional 'AND ROWNUM <= <n>' and we have to 
+        # figure out where to insert it.
         #
         # ADQL (and some DBMSs) use this to limit the number
         # of records to return but other DBMSs use other
