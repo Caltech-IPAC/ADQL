@@ -31,7 +31,7 @@ while True:
 def test_adql(adqlstr,sqlstr):
 
     adql = ADQL(dbms='oracle', level=20, debugfile=None,
-                racol='ra', deccol='dec',
+                racol='ra', deccol='dec', tap_schema='no_tap_schema',
                 xcol = 'x', ycol='y', zcol='z', indxcol='htm20',
                 mode=SpatialIndex.HTM, encoding=SpatialIndex.BASE10)
 
