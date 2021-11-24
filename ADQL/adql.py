@@ -46,8 +46,9 @@ class ADQL:
     """
 
     def __init__(self, dbms='oracle', mode=SpatialIndex.HTM, level=7, 
-                 encoding=None, debugfile=None, racol='ra', deccol='dec',
-                 xcol='x', ycol='y', zcol='z', indxcol=None):
+                 tap_schema=None, encoding=None, debugfile=None, 
+                 racol='ra', deccol='dec', xcol='x', ycol='y', zcol='z', 
+                 indxcol=None):
 
         """
         ADQL() initialization allows you to set a number of parameters
@@ -64,6 +65,15 @@ class ADQL:
         level : integer, optional, default=7
             Both tesselation schemes involve a z-ordered nesting of cells.
             This parameter defines the depth used for this database table.
+        tap_schema : string, optional, default=None
+            The TAP spec has a fixed name for the DBMS schema holding the 
+            metadata tables (e.g., 'TAP_SCHEMA.tables' is a list of tables and
+            'TAP_SCHEMA.columns' is a list of all the columns in all the tables
+            with description, datatype, format etc.)  This parameter overrides
+            that by doing a string substitution in query that changes the 
+            string "TAP_SCHEMA" to whatever is string is given.  This can even
+            be the same schema (explicitly or using blank) as the default 
+            data tables.
         racol : string, optional, default='ra'
             When we validate the input query, we check to see of the spatial
             index being used conforms to the RA/Dec column names specified
@@ -106,17 +116,22 @@ class ADQL:
         self.funcData  = []
         self.funcLevel = 0
 
-        self.mode     = mode
-        self.dbms     = dbms
-        self.level    = level
-        self.racol    = racol.lower()
-        self.deccol   = deccol.lower()
-        self.xcol     = xcol.lower()
-        self.ycol     = ycol.lower()
-        self.zcol     = zcol.lower()
+        self.mode       = mode
+        self.dbms       = dbms
+        self.level      = level
+        self.racol      = racol.lower()
+        self.deccol     = deccol.lower()
+        self.xcol       = xcol.lower()
+        self.ycol       = ycol.lower()
+        self.zcol       = zcol.lower()
 
-        self.indxcol  = indxcol.lower()
-        self.encoding = encoding
+        self.indxcol    = indxcol.lower()
+        self.encoding   = encoding
+
+        self.tap_schema = tap_schema
+
+        if tap_schema != None and len(self.tap_schema) > 0:
+           self.tap_schema = self.tap_schema + '.'
 
         if indxcol is None:
 
@@ -1151,15 +1166,18 @@ class ADQL:
 
         patched_adql = adql
 
-        patched_adql = re.sub(r'\n',            r' ',         patched_adql, flags=re.IGNORECASE)
-        patched_adql = re.sub(r'contains\s*\(', r'contains(', patched_adql, flags=re.IGNORECASE)
-        patched_adql = re.sub(r'polygon\s*\(',  r'polygon(',  patched_adql, flags=re.IGNORECASE)
-        patched_adql = re.sub(r'circle\s*\(',   r'circle(',   patched_adql, flags=re.IGNORECASE)
-        patched_adql = re.sub(r'point\s*\(',    r'point(',    patched_adql, flags=re.IGNORECASE)
-        patched_adql = re.sub(r'box\s*\(',      r'box(',      patched_adql, flags=re.IGNORECASE)
-        patched_adql = re.sub(r'distance\s*\(', r'distance(', patched_adql, flags=re.IGNORECASE)
-        patched_adql = re.sub(r'order\s*by',    r'order by',  patched_adql, flags=re.IGNORECASE)
-        patched_adql = re.sub(r'group\s*by',    r'group by',  patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'\n',            r' ',          patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'contains\s*\(', r'contains(',  patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'polygon\s*\(',  r'polygon(',   patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'circle\s*\(',   r'circle(',    patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'point\s*\(',    r'point(',     patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'box\s*\(',      r'box(',       patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'distance\s*\(', r'distance(',  patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'order\s*by',    r'order by',   patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub(r'group\s*by',    r'group by',   patched_adql, flags=re.IGNORECASE)
+
+        if self.tap_schema != None:
+            patched_adql = re.sub(r'TAP_SCHEMA.', self.tap_schema, patched_adql, flags=re.IGNORECASE)
 
         tags = patched_adql.split(' ')
 
@@ -1400,6 +1418,7 @@ class ADQL:
             
             # Remove any extraneous "AS" tokens
 
+            '''
             while True:
 
                 done = False
@@ -1427,6 +1446,7 @@ class ADQL:
 
                 self.debugfile.write('\n')
                 self.debugfile.write('=========================================================================\n')
+            '''
 
 
         # Check for the location of the start and end of the WHERE clause.
