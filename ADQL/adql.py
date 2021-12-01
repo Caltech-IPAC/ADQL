@@ -6,12 +6,15 @@
 import math
 import numpy as np
 import sqlparse
+import strbalance
 import re
 
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 
 from spatial_index import SpatialIndex
+
+import pprint
 
 
 class ADQL:
@@ -529,10 +532,7 @@ class ADQL:
         #    DBMS engine itself, something we want to avoid as part
         #    of this package.
 
-        print(self.funcData)
-
         funcName = self.funcData[i]['name']
-
 
 
         # CONTAINS() FUNCTION
@@ -540,36 +540,22 @@ class ADQL:
         if funcName == 'contains':
 
             func1 = self.funcData[i]['args'][0]['name']
-            func2 = self.funcData[i]['args'][1]['name']
-
             args1 = self.funcData[i]['args'][0]['args']
+
+            if(self.debug):
+                self.debugfile.write('    func1: ' + func1 + ', args1: ' + str(args1) + '\n')
+
+            
+            func2 = self.funcData[i]['args'][1]['name']
             args2 = self.funcData[i]['args'][1]['args']
+
+            if(self.debug):
+                self.debugfile.write('    func2: ' + func2 + ', args2: ' + str(args2) + '\n')
 
             val   = self.funcData[i]['val']
 
-            print(args1)
-            print(args2)
-
-            args1[0] = re.sub('"', "'", args1[0])
-            args2[0] = re.sub('"', "'", args2[0])
-
-            if(args1[0] == "''"):
-               args1[0] = "'icrs'"
-
-            if(args2[0] == "''"):
-               args2[0] = "'icrs'"
-
-            if(args1[0].lower() == "'j2000'"):
-               args1[0] = "'icrs'"
-
-            if(args2[0].lower() == "'j2000'"):
-               args2[0] = "'icrs'"
-
-            if(args1[0].lower() == "'fk5'"):
-               args1[0] = "'icrs'"
-
-            if(args2[0].lower() == "'fk5'"):
-               args2[0] = "'icrs'"
+            if(self.debug):
+                self.debugfile.write('    val:   ' + val + '\n')
 
 
             # All three CONTAINS() variants start with a POINT()
@@ -591,19 +577,35 @@ class ADQL:
 
             nargs1 = len(args1)
 
-            if func1 == 'point' and nargs1 >= 3:
+            if func1 == 'point' and nargs1 >= 2:
 
-                coordsys = ''
+                if nargs1 == 2:
 
-                try:
-                    coordsys = self._frame_lookup(args1[0])
-                except Exception as e:
-                    raise Exception(str(e) + ' in point() function.\n')
+                    index = 0
 
-                if(args1[0].lower() != "'icrs'" and args1[0].lower() != '"icrs"'):
-                    raise Exception('Spatial index coordinate system must be "ICRS".\n')
+                    coordsys = self._frame_lookup("'icrs'")
 
-                index = 1
+                if nargs1 >= 3:
+
+                    coordsys = ''
+
+                    args1[0] = re.sub('"', "'", args1[0])
+
+                    if(args1[0] == ''):
+                       args1[0] = "'icrs'"
+
+                    if(args1[0] == "''"):
+                       args1[0] = "'icrs'"
+
+                    try:
+                        coordsys = self._frame_lookup(args1[0])
+                    except Exception as e:
+                        raise Exception(str(e) + ' in point() function.\n')
+
+                    if(args1[0].lower() != "'icrs'" and args1[0].lower() != '"icrs"'):
+                        raise Exception('Spatial index coordinate system must be "ICRS".\n')
+
+                    index = 1
 
                 # 'ra' processing
 
@@ -639,6 +641,7 @@ class ADQL:
                     deccol  = args1[index]
                     index   = index + 1
 
+
                 # Now check validity and consistency of values and construct
                 # names to be use in output constraint
 
@@ -651,11 +654,6 @@ class ADQL:
                 if(prefix1 != prefix2):
                     raise Exception('RA and Dec table references must match.\n')
 
-                try:
-                    coordsys = self._frame_lookup(args2[0])
-                except Exception as e:
-                    raise Exception(str(e) + ' in circle function.\n')
-
                 if prefix1 is None:
                     xcolfinal = self.xcol
                     ycolfinal = self.ycol
@@ -667,7 +665,7 @@ class ADQL:
                     zcolfinal = prefix1 + '.' + self.zcol
                     indxfinal = prefix1 + '.' + self.indxcol
             else:
-                raise Exception('The first argument to a CONTAIN() function must be POINT(system,racol,deccol)')
+                raise Exception('The first argument to a CONTAIN() function must be POINT(racol,deccol) or POINT(system,racol,deccol)')
 
 
             # CONTAINS() FUNCTION: POINT IN CIRCLE
@@ -678,10 +676,37 @@ class ADQL:
 
             geomstr = ''
 
-            if(func2 == 'circle' and nargs2 >= 4):
+            if(func2 == 'circle'):
 
-                lon = float(args2[1])
-                lat = float(args2[2])
+                if (nargs2 < 3):
+                    raise Exception('Circle specification requires ra, dec and radius.')
+
+                if nargs2%2 == 1:
+
+                    index = 0
+
+                    coordsys = self._frame_lookup("'icrs'")
+
+                else:
+                    index = 1
+
+                    coordsys = ''
+
+                    args2[0] = re.sub('"', "'", args2[0])
+
+                    if(args2[0] == ''):
+                       args2[0] = "'icrs'"
+
+                    if(args2[0] == "''"):
+                       args2[0] = "'icrs'"
+
+                    try:
+                        coordsys = self._frame_lookup(args2[0])
+                    except Exception as e:
+                        raise Exception(str(e) + ' in polygon() function.')
+
+                lon = float(args2[index])
+                lat = float(args2[index+1])
 
                 if(lat < -90.):
                     raise Exception('Invalid latitude value in circle() function.')
@@ -689,7 +714,7 @@ class ADQL:
                 if(lat > 90.):
                     raise Exception('Invalid latitude value in circle() function.')
 
-                radius = float(args2[3])
+                radius = float(args2[index+2])
 
                 if(radius < 0.):
                     raise Exception('Invalid radius value in circle() function.')
@@ -725,28 +750,38 @@ class ADQL:
 
             elif func2 == 'polygon':
 
-                if (nargs2 < 7):
-                    raise Exception('Polygon specification requires at least 6 numbers.')
+                if (nargs2 < 6):
+                    raise Exception('Polygon specification requires at least three coordinate pairs (six numbers).')
 
-                try:
-                    coordsys = self._frame_lookup(args1[0])
-                except Exception as e:
-                    raise Exception(str(e) + ' in point() function.')
+                if nargs2%2 == 0:
 
-                try:
-                    coordsys = self._frame_lookup(args2[0])
-                except Exception as e:
-                    raise Exception(str(e) + ' in polygon() function.')
+                    index = 0
 
-                if(nargs2 % 2 == 0):
-                    raise Exception('Polygon specification requires an even number of values (>=6).')
+                    coordsys = self._frame_lookup("'icrs'")
+                else:
+                    index = 1
 
-                npts = int((nargs2-1) / 2)
+                    coordsys = ''
+
+                    args2[0] = re.sub('"', "'", args2[0])
+
+                    if(args2[0] == ''):
+                       args2[0] = "'icrs'"
+
+                    if(args2[0] == "''"):
+                       args2[0] = "'icrs'"
+
+                    try:
+                        coordsys = self._frame_lookup(args2[0])
+                    except Exception as e:
+                        raise Exception(str(e) + ' in polygon() function.')
+
+                npts = int((nargs2-index) / 2)
 
                 if(npts < 3):
-                    raise Exception('Polygon specification requires an even number of values (>=6).')
+                    raise Exception('Polygon specification requires at least three coordinate pairs (six numbers).')
 
-                for j in range(1, nargs2):
+                for j in range(index, nargs2):
                     if self._is_number(args2[j]) is False:
                         raise Exception('Polygon coordinate pairs must be numbers.')
 
@@ -754,8 +789,8 @@ class ADQL:
                 dec = []
 
                 for j in range(npts):
-                    lon = float(args2[2 * j + 1])
-                    lat = float(args2[2 * j + 2])
+                    lon = float(args2[2 * j + index])
+                    lat = float(args2[2 * j + index + 1])
 
                     coord = SkyCoord(lon * u.degree, lat * u.degree, frame=coordsys)
 
@@ -781,28 +816,45 @@ class ADQL:
 
             elif func2 == 'box':
 
-                try:
-                    coordsys = self._frame_lookup(args1[0])
-                except Exception as e:
-                    raise Exception(str(e) + ' in point() function.')
+                if (nargs2 < 4):
+                    raise Exception('Box specification requires ra, dec, width and height (four numbers).')
 
-                if(nargs2 != 5):
-                    raise Exception('box specification requires four coordinate pairs.')
+                if nargs2%2 == 0:
 
-                try:
-                    coordsys = self._frame_lookup(args2[0])
-                except Exception as e:
-                    raise Exception(str(e) + ' in box() function.')
+                    index = 0
 
-                for j in range(1, nargs2):
+                    coordsys = self._frame_lookup("'icrs'")
+                
+                else:
+                    index = 1
+
+                    coordsys = ''
+
+                    args2[0] = re.sub('"', "'", args2[0])
+
+                    if(args2[0] == ''):
+                       args2[0] = "'icrs'"
+
+                    if(args2[0] == "''"):
+                       args2[0] = "'icrs'"
+
+                    try:
+                        coordsys = self._frame_lookup(args2[0])
+                    except Exception as e:
+                        raise Exception(str(e) + ' in polygon() function.')
+
+                if(nargs2-index != 4):
+                    raise Exception('Box specification requires ra, dec, width and height (four numbers).')
+
+                for j in range(index, nargs2):
                     if self._is_number(args2[j]) is False:
                         raise Exception('Box parameters must be numbers.')
 
-                lon = float(args2[1])
-                lat = float(args2[2])
+                lon = float(args2[index])
+                lat = float(args2[index+1])
 
-                width  = float(args2[3])
-                height = float(args2[4])
+                width  = float(args2[index+2])
+                height = float(args2[index+3])
 
                 box = self._box(lon, lat, width, height)
 
@@ -888,28 +940,38 @@ class ADQL:
                 nargs1 = len(args1)
                 nargs2 = len(args2)
 
-            args1[0] = re.sub('"', "'", args1[0])
-            args2[0] = re.sub('"', "'", args2[0])
-
-            if(args1[0] == "''"):
-               args1[0] = "'icrs'"
-
-            if(args2[0] == "''"):
-               args2[0] = "'icrs'"
-
 
             # "First" POINT for DISTANCE (the one with ra,dec columns)
 
+            if (nargs1 < 2):
+                raise Exception('Point specification requires ra and dec (two column names).')
+
             coordsys = ''
-            try:
-                coordsys = self._frame_lookup(args1[0])
-            except Exception as e:
-                raise Exception(str(e) + ' in point() function.\n')
 
-            if(args1[0].lower() != "'icrs'" and args1[0].lower() != '"icrs"'):
-                raise Exception('Spatial index coordinate system must be "ICRS".\n')
+            if nargs1%2 == 0:
 
-            index = 1
+                index = 0
+
+                coordsys = self._frame_lookup("'icrs'")
+
+            else:
+                index = 1
+
+                args1[0] = re.sub('"', "'", args1[0])
+
+                if(args1[0] == ''):
+                   args1[0] = "'icrs'"
+
+                if(args1[0] == "''"):
+                   args1[0] = "'icrs'"
+
+                try:
+                    coordsys = self._frame_lookup(args1[0])
+                except Exception as e:
+                    raise Exception(str(e) + ' in point() function.')
+
+                if(args1[0].lower() != "'icrs'" and args1[0].lower() != '"icrs"'):
+                    raise Exception('Spatial index coordinate system must be "ICRS".\n')
 
             # 'ra' processing
 
@@ -957,11 +1019,6 @@ class ADQL:
             if(prefix1 != prefix2):
                 raise Exception('RA and Dec table references must match.\n')
 
-            try:
-                coordsys = self._frame_lookup(args2[0])
-            except Exception as e:
-                raise Exception(str(e) + ' in circle function.\n')
-
             if prefix1 is None:
                 xcolfinal = self.xcol
                 ycolfinal = self.ycol
@@ -976,13 +1033,39 @@ class ADQL:
 
             # "Second" POINT for DISTANCE (the one with fixed coordinates)
 
-            try:
-                coordsys = self._frame_lookup(args2[0])
-            except Exception as e:
-                raise Exception(str(e) + ' in point function.\n')
+            if (nargs2 < 2):
+                raise Exception('Point specification requires ra and dec (two column names).')
 
-            lon = float(args2[1])
-            lat = float(args2[2])
+            coordsys = ''
+
+            if nargs2%2 == 0:
+
+                index = 0
+
+                coordsys = self._frame_lookup("'icrs'")
+
+            else:
+                index = 1
+
+                args2[0] = re.sub('"', "'", args2[0])
+
+                if(args2[0] == ''):
+                   args2[0] = "'icrs'"
+
+                if(args2[0] == "''"):
+                   args2[0] = "'icrs'"
+
+                try:
+                    coordsys = self._frame_lookup(args2[0])
+                except Exception as e:
+                    raise Exception(str(e) + ' in point() function.')
+
+                if(args2[0].lower() != "'icrs'"):
+                    raise Exception('Spatial index coordinate system must be "ICRS".\n')
+
+
+            lon = float(args2[index])
+            lat = float(args2[index+1])
 
             if(lat < -90.):
                 raise Exception('Invalid latitude value in circle() function.')
@@ -1143,6 +1226,74 @@ class ADQL:
 
         return polygon
 
+    import strbalance
+
+
+    def _checkQuotes(self, instr):
+
+        outstr = ''
+
+        inSingle = False
+        inDouble = False
+
+        prev = ' '
+
+        for element in instr:
+
+            if inSingle == True and element == "'" and prev != "'":
+                inSingle = False
+                outstr = outstr + element
+
+            elif inDouble == True and element == '"':
+                inDouble = False
+                outstr = outstr + element
+
+            elif element == "'":
+                inSingle = True
+                outstr = outstr + element
+
+            elif element == '"':
+                inDouble = True
+                outstr = outstr + element
+
+            elif inSingle == True or inDouble == True:
+                outstr = outstr + 'x'
+
+            else:
+                outstr = outstr + element
+
+            prev = element
+
+        return outstr
+
+
+    def _checkBalance(self, instr):
+
+        instr = self._checkQuotes(instr)
+
+        balance = strbalance.Balance()
+
+        unbalanced = balance.is_unbalanced(instr)
+
+        position = -1
+
+        if unbalanced == None:
+            retstr = "Balanced"
+
+        else:
+
+            if unbalanced.opening_position != 0 and unbalanced.closing_position == 0:
+                retstr = 'Unbalanced opening parenthesis at position ' + str(unbalanced.opening_position)
+
+            if unbalanced.opening_position == 0 and unbalanced.closing_position != 0:
+                retstr = 'Unbalanced closing parenthesis at position ' + str(unbalanced.closing_position)
+
+            if unbalanced.opening_position != 0 and unbalanced.closing_position != 0:
+                retstr = 'Unbalanced parentheses at positions ' + str(unbalanced.opening_position) + \
+                        ' and ' + str(unbalanced.closing_position)
+
+        return retstr
+
 
     def sql(self, adql):
 
@@ -1161,9 +1312,8 @@ class ADQL:
         """
 
 
-        # Look for a 'TOP <n>' construct in query.  Analyze it and
-        # remove it from the query.  It will get added back in
-        # later as part of (or all of) the query WHERE clause.
+        # It is easier to look for patterns if we get rid of extra
+        # whitespace in a few places.
 
         patched_adql = adql
 
@@ -1177,8 +1327,28 @@ class ADQL:
         patched_adql = re.sub(r'order\s*by',    r'order by',   patched_adql, flags=re.IGNORECASE)
         patched_adql = re.sub(r'group\s*by',    r'group by',   patched_adql, flags=re.IGNORECASE)
 
+
+        # If we have a TAP_SCHEMA rename, do it here.
+
         if self.tap_schema != None:
             patched_adql = re.sub(r'TAP_SCHEMA.', self.tap_schema, patched_adql, flags=re.IGNORECASE)
+
+
+        # And while we still have the query as a single string, this is the 
+        # easiest place to make sure "contains(point(),circle())" etc. patterns
+        # have the right number of parentheses (a common mistake).  While we are 
+        # at it, we can check the pattern of parentheses, brackets and quotes
+        # and stop if the query string is fundementally flawed in this regard.
+
+        retval = self._checkBalance(patched_adql)
+
+        if retval != "Balanced":
+            raise Exception("Syntax error: " + retval)
+
+
+        # Look for a 'TOP <n>' construct in query.  Analyze it and
+        # remove it from the query.  It will get added back in
+        # later as part of (or all of) the query WHERE clause.
 
         tags = patched_adql.split(' ')
 
@@ -1366,97 +1536,92 @@ class ADQL:
 
         imax = len(self.adql_tokens) - 1
 
-        if(self.dbms == 'oracle'):
+        # if(self.dbms == 'oracle'):
 
-            for i in range(imax):
+        for i in range(imax):
 
-                if(from_start == -1 and self.adql_tokens[i].lower() == 'from'):
-                    from_start = i
+            if(from_start == -1 and self.adql_tokens[i].lower() == 'from'):
+                from_start = i
 
-                if(from_end == -1 and i < imax
-                and (   self.adql_tokens[i].lower() == 'group'
-                     or self.adql_tokens[i].lower() == 'order')
-                and self.adql_tokens[i + 1].lower() == ' '):
+            if(from_end == -1 and i < imax
+            and (   self.adql_tokens[i].lower() == 'group'
+                 or self.adql_tokens[i].lower() == 'order')
+            and self.adql_tokens[i + 1].lower() == ' '):
 
-                    if(i + 2 < imax):
-                        for j in range(i + 2,imax + 1):
-                            if(self.adql_tokens[j].lower() == 'by'):
-                                from_end = i
-                                break
-                            elif(self.adql_tokens[j].lower() != ' '):
-                                break
+                if(i + 2 < imax):
+                    for j in range(i + 2,imax + 1):
+                        if(self.adql_tokens[j].lower() == 'by'):
+                            from_end = i
+                            break
+                        elif(self.adql_tokens[j].lower() != ' '):
+                            break
 
-                elif(from_end == -1 and i < imax
-                and (   self.adql_tokens[i].lower() == 'group by'
-                     or self.adql_tokens[i].lower() == 'order by')
-                and self.adql_tokens[i + 1].lower() == ' '):
-                    from_end = i
+            elif(from_end == -1 and i < imax
+            and (   self.adql_tokens[i].lower() == 'group by'
+                 or self.adql_tokens[i].lower() == 'order by')
+            and self.adql_tokens[i + 1].lower() == ' '):
+                from_end = i
 
-                elif(from_end == -1 and i < imax
-                and  self.adql_tokens[i].lower() == 'where'):
-                    from_end = i
+            elif(from_end == -1 and i < imax
+            and  self.adql_tokens[i].lower() == 'where'):
+                from_end = i
 
-                elif(from_end == -1 and i < imax
-                and  self.adql_tokens[i].lower() == 'having'):
-                    from_end = i
+            elif(from_end == -1 and i < imax
+            and  self.adql_tokens[i].lower() == 'having'):
+                from_end = i
 
-                if(from_start == -1 and from_end == -1
-                                     and self.adql_tokens[i + 1].lower() == ';'):
-                    from_end = i
+            if(from_start == -1 and from_end == -1
+                                 and self.adql_tokens[i + 1].lower() == ';'):
+                from_end = i
 
 
-            if(from_start != -1 and from_end == -1):
-                from_end = imax + 1
+        if(from_start != -1 and from_end == -1):
+            from_end = imax + 1
 
-            if(self.debug):
-                self.debugfile.write('\n')
-                self.debugfile.write('from clause: \n')
-                self.debugfile.write('\n')
-                self.debugfile.write('from_start: ' + str(from_start) + '\n')
-                self.debugfile.write('from_end:   ' + str(from_end)   + '\n')
-                self.debugfile.write('\n')
-                self.debugfile.write('=========================================================================\n')
-            
-            # Remove any extraneous "AS" tokens
+        if(self.debug):
+            self.debugfile.write('\n')
+            self.debugfile.write('from clause: \n')
+            self.debugfile.write('\n')
+            self.debugfile.write('from_start: ' + str(from_start) + '\n')
+            self.debugfile.write('from_end:   ' + str(from_end)   + '\n')
+            self.debugfile.write('\n')
+            self.debugfile.write('=========================================================================\n')
+        
+        # Remove any extraneous "AS" tokens from "FROM"
 
-            '''
-            while True:
+        while True:
 
-                done = False
+            done = False
 
-                for i in range(from_start+1, from_end):
-                    if(self.adql_tokens[i].lower() == 'as' 
-                            and self.adql_tokens[i-1] == ' '):
+            for i in range(from_start+1, from_end):
+                if(self.adql_tokens[i].lower() == 'as' 
+                        and self.adql_tokens[i-1] == ' '):
 
-                        self.adql_tokens.pop(i-1)
-                        self.adql_tokens.pop(i-1)
-                        from_end = from_end - 2
-                        break
-                        
-                    else:
-                        done = True
-
-                if done == True:
+                    self.adql_tokens.pop(i-1)
+                    self.adql_tokens.pop(i-1)
+                    from_end = from_end - 2
                     break
+                    
+                else:
+                    done = True
 
-            if(self.debug):
-                self.debugfile.write('adql_tokens after Oracle "FROM" fix: \n')
+            if done == True:
+                break
 
-                for i in range(len(self.adql_tokens)):
-                    self.debugfile.write('token ' + str(i) + ':   [' +  self.adql_tokens[i] + ']\n')
+        if(self.debug):
+            self.debugfile.write('adql_tokens after "FROM" fix: \n')
 
-                self.debugfile.write('\n')
-                self.debugfile.write('=========================================================================\n')
-            '''
+            for i in range(len(self.adql_tokens)):
+                self.debugfile.write('token ' + str(i) + ':   [' +  self.adql_tokens[i] + ']\n')
+
+            self.debugfile.write('\n')
+            self.debugfile.write('=========================================================================\n')
 
 
         # Check for the location of the start and end of the WHERE clause.
         # Not needed if we don't have a 'TOP n' constraint.  An oddity:
         # The same sqlparse library under Linux and OSX parse differently;
         # e.g. in one "group by" is a single token and in the other it is three.
-
-        indx = 0
-        outstr = ''
 
         where_start = -1
         where_end   = -1
@@ -1516,7 +1681,16 @@ class ADQL:
         # constraint.  If we have a 'TOP n' directive, add it to the WHERE
         # clause (or if there was no where clause, add one.
 
+        indx = 0
+        outstr = ''
+
+        if(self.debug):
+            self.debugfile.write('Add GEOM data, if any: \n')
+
         for i in range(len(self.adql_tokens)):
+
+            if(self.debug):
+                self.debugfile.write(str(i) + ': ' + self.adql_tokens[i] + '\n')
 
 
             # GEOM placeholder processing
