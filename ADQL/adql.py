@@ -1315,7 +1315,7 @@ class ADQL:
         # It is easier to look for patterns if we get rid of extra
         # whitespace in a few places.
 
-        patched_adql = adql
+        patched_adql = adql.strip()
 
         patched_adql = re.sub(r'\n',            r' ',          patched_adql, flags=re.IGNORECASE)
         patched_adql = re.sub(r'contains\s*\(', r'contains(',  patched_adql, flags=re.IGNORECASE)
@@ -1503,6 +1503,28 @@ class ADQL:
                             self.adql_tokens[k] = ''
 
                         continue
+
+
+        #Strip of trailing whitespace
+
+        while True:
+            last = len(self.adql_tokens) - 1
+
+            if self.adql_tokens[last] == ' ':
+                self.adql_tokens.pop()
+            else:
+                break
+
+
+        # And if there are any, strip of trailing ';' characters
+
+        while True:
+            last = len(self.adql_tokens) - 1
+
+            if self.adql_tokens[last] == ';':
+                self.adql_tokens.pop()
+            else:
+                break
 
 
         if(self.debug):
@@ -1727,6 +1749,9 @@ class ADQL:
             outstr = outstr + ') AND ROWNUM <= ' + str(count)
 
         if(self.dbms == 'sqlite3' and haveTop ):
+            outstr = outstr + ' LIMIT ' + str(count)
+
+        if(self.dbms == 'mysql' and haveTop ):
             outstr = outstr + ' LIMIT ' + str(count)
 
         if(self.debug):
