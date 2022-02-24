@@ -803,6 +803,9 @@ class ADQL:
                 retval = spt.polygon_search(npts, ra, dec, self.mode, 
                         self.level, xcolfinal, ycolfinal, zcolfinal, 
                         indxfinal, self.encoding)
+                 
+                if(retval['status'] == 1):
+                    raise Exception(retval['error_message'])
 
                 if(val == '0'):
                     retval['geom_constraint'] = retval['geom_constraint'].replace('<=', '>')
