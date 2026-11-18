@@ -902,17 +902,17 @@ class ADQL:
             # column POINT is given second.
 
             iscol1 = False
-            for i in range(0,nargs1):
-                if args1[i].lower() == self.racol:
+            for k in range(0,nargs1):
+                if args1[k].lower() == self.racol:
                     iscol1 = True
-                if args1[i].lower() == self.deccol:
+                if args1[k].lower() == self.deccol:
                     iscol1 = True
 
             iscol2 = False
-            for i in range(0,nargs2):
-                if args2[i].lower() == self.racol:
+            for k in range(0,nargs2):
+                if args2[k].lower() == self.racol:
                     iscol2 = True
-                if args2[i].lower() == self.deccol:
+                if args2[k].lower() == self.deccol:
                     iscol2 = True
 
             if(iscol1 is False and iscol2 is False):

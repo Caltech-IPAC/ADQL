@@ -41,3 +41,9 @@ def test_contains_zero(region, inside, outside):
     db.executemany('insert into pts values (?, ?, ?, ?, ?)', [p + xyz(*p) for p in inside + outside])
     sql = translate("select ra, dec from pts where contains(point('icrs', ra, dec), " + region + ") = 0", 'sqlite3')
     assert sorted(db.execute(sql)) == sorted(outside)
+
+
+def test_distance_fixed_point_first():
+    query = "select distance({}, {}) as d from pscomppars"
+    column, fixed = "point('icrs', ra, dec)", "point('icrs', 290.67, 44.5)"
+    assert translate(query.format(fixed, column)) == translate(query.format(column, fixed))
