@@ -210,19 +210,6 @@ class ADQL:
         # ADQL (and some DBMSs) use this to limit the number
         # of records to return but other DBMSs use other
         # constructs (and not in the same place in the query).
-        # For Oracle, this constraint goes in the WHERE clause 
-        # as an additional 'AND ROWNUM <= <n>' and we have to 
-        # figure out where to insert it.
-        #
-        # ADQL (and some DBMSs) use this to limit the number
-        # of records to return but other DBMSs use other
-        # constructs (and not in the same place in the query).
-        # For our purpose (Oracle) this constraint goes in the
-        # WHERE clause as an additional 'AND ROWNUM <= <n>'
-        # so we will have to figure out where to insert it.
-        #
-        # However, because of the way ROWNUM works, there is
-        # no simple way to implement the ADQL 'OFFSET' directive.
 
         old_depth = self.depth
 
@@ -739,8 +726,7 @@ class ADQL:
                     raise Exception(str(e))
 
                 if(val == '0'):
-                    retval['geom_constraint'] = retval['geom_constraint'].replace('<=', '>')
-                    geomstr = "(" + retval['geom_constraint'] + ")"
+                    geomstr = "(NOT (" + retval['geom_constraint'] + "))"
 
                 else:
                     geomstr = "(" + retval['geom_constraint'] + ") AND (" + retval['index_constraint'] + ")"
@@ -808,8 +794,7 @@ class ADQL:
                     raise Exception(retval['error_message'])
 
                 if(val == '0'):
-                    retval['geom_constraint'] = retval['geom_constraint'].replace('<=', '>')
-                    geomstr = "(" + retval['geom_constraint'] + ")"
+                    geomstr = "(NOT (" + retval['geom_constraint'] + "))"
 
                 else:
                     geomstr = "(" + retval['geom_constraint'] + ") AND (" + retval['index_constraint'] + ")"
@@ -883,8 +868,7 @@ class ADQL:
                                             indxfinal, self.encoding)
 
                 if(val == '0'):
-                    retval['geom_constraint'] = retval['geom_constraint'].replace('<=', '>')
-                    geomstr = "(" + retval['geom_constraint'] + ")"
+                    geomstr = "(NOT (" + retval['geom_constraint'] + "))"
 
                 else:
                     geomstr = "(" + retval['geom_constraint'] + ") AND (" + retval['index_constraint'] + ")"
@@ -918,17 +902,17 @@ class ADQL:
             # column POINT is given second.
 
             iscol1 = False
-            for i in range(0,nargs1):
-                if args1[i].lower() == self.racol:
+            for k in range(0,nargs1):
+                if args1[k].lower() == self.racol:
                     iscol1 = True
-                if args1[i].lower() == self.deccol:
+                if args1[k].lower() == self.deccol:
                     iscol1 = True
 
             iscol2 = False
-            for i in range(0,nargs2):
-                if args2[i].lower() == self.racol:
+            for k in range(0,nargs2):
+                if args2[k].lower() == self.racol:
                     iscol2 = True
-                if args2[i].lower() == self.deccol:
+                if args2[k].lower() == self.deccol:
                     iscol2 = True
 
             if(iscol1 is False and iscol2 is False):
@@ -1350,8 +1334,7 @@ class ADQL:
 
 
         # Look for a 'TOP <n>' construct in query.  Analyze it and
-        # remove it from the query.  It will get added back in
-        # later as part of (or all of) the query WHERE clause.
+        # remove it from the query.
 
         tags = patched_adql.split(' ')
 
@@ -1643,68 +1626,9 @@ class ADQL:
             self.debugfile.write('=========================================================================\n')
 
 
-        # Check for the location of the start and end of the WHERE clause.
-        # Not needed if we don't have a 'TOP n' constraint.  An oddity:
-        # The same sqlparse library under Linux and OSX parse differently;
-        # e.g. in one "group by" is a single token and in the other it is three.
-
-        where_start = -1
-        where_end   = -1
-
-        imax = len(self.adql_tokens) - 1
-
-        if(self.dbms == 'oracle' and haveTop):
-
-            for i in range(imax):
-
-                if(where_start == -1 and self.adql_tokens[i].lower() == 'where'):
-                    where_start = i
-
-                if(where_end == -1 and i < imax
-                and (   self.adql_tokens[i].lower() == 'group'
-                     or self.adql_tokens[i].lower() == 'order')
-                and self.adql_tokens[i + 1].lower() == ' '):
-
-                    if(i + 2 < imax):
-                        for j in range(i + 2,imax + 1):
-                            if(self.adql_tokens[j].lower() == 'by'):
-                                where_end = i
-                                break
-                            elif(self.adql_tokens[j].lower() != ' '):
-                                break
-
-                elif(where_end == -1 and i < imax
-                and (   self.adql_tokens[i].lower() == 'group by'
-                     or self.adql_tokens[i].lower() == 'order by')
-                and self.adql_tokens[i + 1].lower() == ' '):
-                    where_end = i
-
-                elif(where_end == -1 and i < imax
-                and  self.adql_tokens[i].lower() == 'having'):
-                    where_end = i
-
-                if(where_start == -1 and where_end == -1
-                                     and self.adql_tokens[i + 1].lower() == ';'):
-                    where_end = i
-
-
-            if(where_start != -1 and where_end == -1):
-                where_end = imax + 1
-
-            if(self.debug):
-                self.debugfile.write('\n')
-                self.debugfile.write('WHERE clause: \n')
-                self.debugfile.write('\n')
-                self.debugfile.write('where_start: ' + str(where_start) + '\n')
-                self.debugfile.write('where_end:   ' + str(where_end)   + '\n')
-                self.debugfile.write('\n')
-                self.debugfile.write('=========================================================================\n')
-
-
         # Create the output local SQL statement.  Where we have inserted a
         # placeholder GEOM tag, replace with a generated geometry/indexing
-        # constraint.  If we have a 'TOP n' directive, add it to the WHERE
-        # clause (or if there was no where clause, add one.
+        # constraint.
 
         indx = 0
         outstr = ''
@@ -1727,29 +1651,13 @@ class ADQL:
                 outstr = outstr + constraint
                 indx = indx + 1
 
-            # Start of 'WHERE'
-
-            elif(self.dbms == 'oracle' and haveTop and i == where_start):
-                outstr = outstr + self.adql_tokens[i] + ' ( '
-
-            # End of 'WHERE'
-
-            elif(self.dbms == 'oracle' and haveTop and i == where_end):
-                if(where_start == -1):
-                    outstr = outstr + ' WHERE ROWNUM <= ' + str(count) + ' ' +  self.adql_tokens[i]
-                else:
-                    outstr = outstr + ' ) AND ROWNUM <= ' + str(count) + ' ' +  self.adql_tokens[i]
-
             # Everything else
 
             else:
                 outstr = outstr + self.adql_tokens[i]
 
-        if(self.dbms == 'oracle' and haveTop and where_start == -1 and where_end == -1):
-            outstr = outstr + ' WHERE ROWNUM <= ' + str(count)
-
-        if(self.dbms == 'oracle' and haveTop and where_start != -1 and where_end == imax+1):
-            outstr = outstr + ') AND ROWNUM <= ' + str(count)
+        if(self.dbms == 'oracle' and haveTop):
+            outstr = outstr + ' FETCH FIRST ' + str(count) + ' ROWS ONLY'
 
         if(self.dbms == 'sqlite3' and haveTop ):
             outstr = outstr + ' LIMIT ' + str(count)
