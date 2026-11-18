@@ -726,8 +726,7 @@ class ADQL:
                     raise Exception(str(e))
 
                 if(val == '0'):
-                    retval['geom_constraint'] = retval['geom_constraint'].replace('<=', '>')
-                    geomstr = "(" + retval['geom_constraint'] + ")"
+                    geomstr = "(NOT (" + retval['geom_constraint'] + "))"
 
                 else:
                     geomstr = "(" + retval['geom_constraint'] + ") AND (" + retval['index_constraint'] + ")"
@@ -795,8 +794,7 @@ class ADQL:
                     raise Exception(retval['error_message'])
 
                 if(val == '0'):
-                    retval['geom_constraint'] = retval['geom_constraint'].replace('<=', '>')
-                    geomstr = "(" + retval['geom_constraint'] + ")"
+                    geomstr = "(NOT (" + retval['geom_constraint'] + "))"
 
                 else:
                     geomstr = "(" + retval['geom_constraint'] + ") AND (" + retval['index_constraint'] + ")"
@@ -870,8 +868,7 @@ class ADQL:
                                             indxfinal, self.encoding)
 
                 if(val == '0'):
-                    retval['geom_constraint'] = retval['geom_constraint'].replace('<=', '>')
-                    geomstr = "(" + retval['geom_constraint'] + ")"
+                    geomstr = "(NOT (" + retval['geom_constraint'] + "))"
 
                 else:
                     geomstr = "(" + retval['geom_constraint'] + ") AND (" + retval['index_constraint'] + ")"
